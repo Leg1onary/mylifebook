@@ -1,33 +1,43 @@
-# MyLifeBook
+# MyLifeBook 📓
 
-Приватное single-user PWA-приложение для работы с психологическими паттернами.
-
-Живёт на **mylifebook.ru**. Только для личного использования — индексация запрещена, регистрация отсутствует.
-
----
-
-## Что это
-
-Инструмент для ежедневного наблюдения за собой и разрушения повторяющихся автоматических схем через:
-
-- **Daily check-in** — ежедневная фиксация состояния (2 минуты)
-- **Thought Records** — 12-шаговый разбор триггерных мыслей
-- **Behavioral Experiments** — проверка старых законов в реальности
-- **SOS mode** — быстрая фиксация острого момента за 60 секунд
-- **Weekly Review** — еженедельный анализ паттернов с AI summary
-- **Insights** — графики и статистика по периодам
+> Персональный PWA-дневник для работы с паттернами поведения и когнитивными искажениями.
+> Домен: **mylifebook.ru**
 
 ---
 
 ## Стек
 
-| Часть | Технологии |
-|---|---|
-| Backend | Python 3.12, FastAPI, SQLAlchemy 2.0 async, SQLite, Alembic, Pydantic v2 |
-| Frontend | React 18, TypeScript, Vite 5, Zustand, TanStack Query v5, Recharts |
-| PWA | vite-plugin-pwa (Workbox), Web Notifications API |
+| Слой | Технология |
+|------|------------|
+| Backend API | FastAPI 0.115 + Python 3.12 |
+| ORM | SQLAlchemy 2.0 (async) |
+| БД | PostgreSQL 16 |
+| Миграции | Alembic |
+| Auth | JWT (python-jose) + bcrypt (passlib) |
 | AI | OpenRouter API (claude-3.5-haiku по умолчанию) |
-| Инфра | Docker, docker-compose, Nginx |
+| Контейнеры | Docker + docker-compose |
+| Frontend | React + TypeScript + Vite (PWA) — `/frontend` |
+
+---
+
+## Быстрый старт
+
+```bash
+# 1. Клонировать
+git clone https://github.com/Leg1onary/mylifebook.git
+cd mylifebook
+
+# 2. Создать .env
+cp .env.example .env
+# Отредактировать .env: задать POSTGRES_PASSWORD и SECRET_KEY
+
+# 3. Запустить
+docker-compose up -d --build
+
+# Миграции запускаются автоматически при старте контейнера backend.
+# API доступно на http://localhost:8000
+# Swagger (только DEBUG=true): http://localhost:8000/api/docs
+```
 
 ---
 
@@ -35,136 +45,65 @@
 
 ```
 mylifebook/
-├── backend/        FastAPI приложение
-├── frontend/       React PWA
-├── infra/          Nginx, скрипты деплоя и бэкапа
-├── data/           SQLite БД (Docker volume)
-└── docs/           ТЗ, карта экранов, user flows, AI rules, промпты
+├── backend/
+│   ├── app/
+│   │   ├── main.py           # FastAPI app factory
+│   │   ├── config.py         # Pydantic Settings
+│   │   ├── database.py       # Async SQLAlchemy engine
+│   │   ├── deps.py           # FastAPI dependencies (get_db, get_current_user)
+│   │   ├── models/           # SQLAlchemy ORM models
+│   │   ├── schemas/          # Pydantic request/response schemas
+│   │   ├── routers/          # API route handlers
+│   │   └── security/         # JWT + bcrypt helpers
+│   ├── alembic/              # DB migrations
+│   ├── Dockerfile
+│   └── requirements.txt
+├── frontend/                 # React PWA (TBD)
+├── docker-compose.yml
+├── .env.example
+└── README.md
 ```
-
-Полное описание каждого файла — в `docs/TZ/mylifebook_tz_v3_private_mvp.md`, раздел «Структура проекта».
 
 ---
 
-## Быстрый старт
+## API эндпоинты
 
-### 1. Клонировать и настроить окружение
+| Prefix | Модуль | Описание |
+|--------|--------|----------|
+| `/api/v1/auth` | auth | Регистрация, логин, профиль |
+| `/api/v1/today` | today | Агрегированный экран «Сегодня» |
+| `/api/v1/checkins` | daily_checkins | Ежедневный чек-ин |
+| `/api/v1/thoughts` | thought_records | Дневник мыслей (CBT) |
+| `/api/v1/experiments` | experiments | Поведенческие эксперименты |
+| `/api/v1/triggers` | triggers | Быстрый лог триггеров |
+| `/api/v1/weekly` | weekly_reviews | Недельные обзоры |
+| `/api/v1/context` | personal_context | Личный контекст пользователя |
+| `/api/v1/insights` | insights | Аналитика: тренды, паттерны |
+| `/api/v1/ai` | ai | AI-инсайты через OpenRouter |
+| `/api/v1/exports` | exports | Экспорт в Markdown для психолога |
+| `/api/v1/settings` | settings | Настройки уведомлений и темы |
 
-```bash
-git clone <repo-url> mylifebook
-cd mylifebook
-cp .env.example .env
-```
+---
 
-Заполнить `.env`:
-
-```env
-DATABASE_URL=sqlite+aiosqlite:///./data/lifebook.db
-SECRET_KEY=<случайная строка 32+ символа>
-ACCESS_TOKEN_EXPIRE_MINUTES=15
-REFRESH_TOKEN_EXPIRE_DAYS=30
-OPENROUTER_API_KEY=<ключ от openrouter.ai>
-OPENROUTER_MODEL=anthropic/claude-3.5-haiku
-APP_USERNAME=<твой логин>
-APP_PASSWORD=<твой пароль>
-CORS_ORIGINS=https://mylifebook.ru,http://localhost:5173
-VITE_API_BASE_URL=http://localhost:8000/api/v1
-```
-
-### 2. Запустить через Docker
+## Создать первую миграцию вручную
 
 ```bash
-docker-compose up -d
-```
-
-Приложение доступно на `http://localhost`.
-
-### 3. Запустить локально (разработка)
-
-```bash
-# Backend
 cd backend
-pip install -r requirements.txt
+alembic revision --autogenerate -m "initial"
 alembic upgrade head
-uvicorn app.main:app --reload --port 8000
-
-# Frontend (в другом терминале)
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend: `http://localhost:5173`
-Backend API: `http://localhost:8000/api/v1`
-Swagger docs: `http://localhost:8000/docs`
-
----
-
-## Полезные команды (Makefile)
-
-```bash
-make dev          # запустить docker-compose в dev режиме
-make build        # собрать образы
-make deploy       # деплой на VPS (git pull + build + restart)
-make backup       # бэкап БД в data/backups/
-make restore      # восстановить из бэкапа
-make logs         # хвост логов всех сервисов
-make shell        # войти в контейнер backend
 ```
 
 ---
 
-## Деплой на VPS
+## Переменные окружения
 
-```bash
-# На сервере (первый раз)
-git clone <repo-url> /opt/mylifebook
-cd /opt/mylifebook
-cp .env.example .env
-# Заполнить .env
-docker-compose up -d
+См. [`.env.example`](.env.example).
 
-# Обновление
-./infra/scripts/deploy.sh
-```
+**Обязательные:**
+- `DATABASE_URL` — asyncpg DSN
+- `SECRET_KEY` — минимум 32 случайных байта (`openssl rand -hex 32`)
+- `POSTGRES_PASSWORD` — пароль для PostgreSQL
 
-Traefik labels — в `infra/traefik/labels.example.txt`.
-Nginx конфиг — в `infra/nginx/mylifebook.conf`.
-
----
-
-## Бэкап и восстановление
-
-```bash
-# Бэкап
-./infra/scripts/backup.sh
-# Создаёт: data/backups/lifebook_2026-06-15.db
-
-# Восстановление
-./infra/scripts/restore.sh data/backups/lifebook_2026-06-15.db
-```
-
----
-
-## Документация
-
-| Файл | Содержимое |
-|---|---|
-| `docs/TZ/mylifebook_tz_v3_private_mvp.md` | Полное техническое задание |
-| `docs/product/screen-map.md` | Карта всех экранов и навигации |
-| `docs/product/user-flows.md` | Пользовательские сценарии (9 flows) |
-| `docs/product/ai-behavior.md` | Правила поведения AI, промпты, edge cases |
-| `docs/prompts/implementation-pack.md` | Пакет для реализатора: стек, порядок фаз, правила |
-| `docs/prompts/openrouter-master-prompt.md` | Готовые промпты для OpenRouter по фазам |
-| `docs/prompts/screen-prompts/` | Промпты под каждый экран отдельно |
-| `docs/api/openapi-notes.md` | Форматы запросов/ответов всех API endpoints |
-
----
-
-## Приватность
-
-- `robots.txt`: `Disallow: /`
-- Nginx: `X-Robots-Tag: noindex, nofollow` на все ответы
-- AI: данные не кешируются, идентификаторы не передаются
-- БД: хранится локально как Docker volume, не покидает сервер
-- Пароль: только bcrypt hash в БД
+**Опциональные:**
+- `OPENROUTER_API_KEY` — нужен только для AI-инсайтов
+- `DEBUG=true` — включает Swagger UI

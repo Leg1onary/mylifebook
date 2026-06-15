@@ -1,0 +1,26 @@
+from sqlalchemy import String, Boolean
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.models.base import Base
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    display_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    timezone: Mapped[str] = mapped_column(String(50), default="Europe/Moscow", nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    # Relationships
+    settings = relationship("UserSettings", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    context = relationship("PersonalContext", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    checkins = relationship("DailyCheckin", back_populates="user", cascade="all, delete-orphan")
+    thought_records = relationship("ThoughtRecord", back_populates="user", cascade="all, delete-orphan")
+    experiments = relationship("Experiment", back_populates="user", cascade="all, delete-orphan")
+    trigger_events = relationship("TriggerEvent", back_populates="user", cascade="all, delete-orphan")
+    weekly_reviews = relationship("WeeklyReview", back_populates="user", cascade="all, delete-orphan")
+    ai_logs = relationship("AILog", back_populates="user", cascade="all, delete-orphan")
+    reminders = relationship("Reminder", back_populates="user", cascade="all, delete-orphan")
