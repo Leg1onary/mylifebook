@@ -1,14 +1,10 @@
-import { apiClient } from './client';
-import type { UserSettings } from '@/types';
+import { api } from './client'
+import type { UserSettings } from '@/types'
 
 export const settingsApi = {
-  get: async (): Promise<UserSettings> => {
-    const { data } = await apiClient.get('/settings');
-    return data;
-  },
+  get: () =>
+    api.get<UserSettings>('/settings'),
 
-  update: async (payload: Partial<UserSettings>): Promise<UserSettings> => {
-    const { data } = await apiClient.patch('/settings', payload);
-    return data;
-  },
-};
+  update: (payload: Partial<UserSettings>) =>
+    api.patch<UserSettings>('/settings', payload),
+}

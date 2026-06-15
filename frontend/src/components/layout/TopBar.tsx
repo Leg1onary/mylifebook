@@ -1,36 +1,37 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Sun, Moon } from 'lucide-react'
+import { useTheme } from '@/hooks/useTheme'
 import styles from './TopBar.module.css'
 
 const TITLES: Record<string, string> = {
-  '/today':       'Сегодня',
-  '/checkin':     'Чекин',
-  '/history':     'История',
-  '/triggers/new':'Триггер',
-  '/thoughts/new':'Мысль',
-  '/experiments': 'Эксперименты',
-  '/weekly':      'Неделя',
-  '/insights':    'Аналитика',
-  '/journal':     'Дневник',
-  '/profile':     'Профиль',
-  '/settings':    'Настройки',
+  '/today':        'Сегодня',
+  '/checkin':      'Чекин',
+  '/history':      'История',
+  '/triggers/new': 'Триггер',
+  '/thoughts/new': 'Мысль',
+  '/experiments':  'Эксперименты',
+  '/weekly':       'Неделя',
+  '/insights':     'Аналитика',
+  '/journal':      'Дневник',
+  '/profile':      'Профиль',
+  '/settings':     'Настройки',
 }
 
 export function TopBar() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
+  const { theme, setTheme } = useTheme()
 
   const isRoot = ['/today', '/insights', '/experiments', '/weekly', '/journal'].includes(pathname)
   const title = TITLES[pathname] ?? ''
+  const isDark = theme === 'dark' || (
+    theme === 'system' &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+  )
 
   function toggleTheme() {
-    const html = document.documentElement
-    const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
-    html.setAttribute('data-theme', next)
-    localStorage.setItem('mlb-theme', next)
+    setTheme(isDark ? 'light' : 'dark')
   }
-
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
 
   return (
     <header className={styles.bar}>
