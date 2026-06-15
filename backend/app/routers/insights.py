@@ -5,7 +5,7 @@ from collections import Counter
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, Integer
 
 from app.deps import get_db, get_current_user
 from app.models.user import User
@@ -113,8 +113,9 @@ async def script_stats(
     since = date.today() - timedelta(days=days)
     result = await db.execute(
         select(
-            func.sum(DailyCheckin.old_script_triggered.cast(db.bind.dialect.NUMERIC)).label("triggered"),
-            func.sum(DailyCheckin.old_script_resisted.cast(db.bind.dialect.NUMERIC)).label("resisted"),
+            # Use Integer cast — safe, works with async SQLAlchemy 2.x
+            func.sum(DailyCheckin.old_script_triggered.cast(Integer)).label("triggered"),
+            func.sum(DailyCheckin.old_script_resisted.cast(Integer)).label("resisted"),
         ).where(
             DailyCheckin.user_id == user.id,
             DailyCheckin.entry_date >= since,
