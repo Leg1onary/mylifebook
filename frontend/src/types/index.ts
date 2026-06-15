@@ -76,6 +76,14 @@ export interface TriggerCreate {
   happened_at?: string;
 }
 
+// AI Reframe — JSONB field added in migration 003
+export interface AIReframe {
+  alternative_thought: string;
+  rationale?: string;
+  socratic_questions?: string[];
+  generated_at?: string;
+}
+
 // Thought Record
 export interface ThoughtRecord {
   id: number;
@@ -98,6 +106,8 @@ export interface ThoughtRecord {
   emotion_before_score?: number;
   emotion_after_score?: number;
   distortions?: string[];
+  /** JSONB — populated by POST /ai/reframe/{id} */
+  ai_reframe?: AIReframe | null;
   is_draft: boolean;
   created_at: string;
   updated_at: string;
@@ -218,6 +228,8 @@ export interface PersonalContext {
   updated_at: string;
 }
 
+export type PersonalContextUpdate = Omit<PersonalContext, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+
 // Settings
 export interface UserSettings {
   timezone: string;
@@ -230,12 +242,17 @@ export interface UserSettings {
   push_token?: string;
 }
 
-// Today
-export interface TodayData {
+// Today snapshot — matches backend GET /today response
+export interface TodaySnapshot {
   date: string;
-  streak: number;
+  streak_days: number;
+  checkin_done: boolean;
   checkin?: DailyCheckin;
-  recent_triggers: TriggerEvent[];
-  recent_thoughts: ThoughtRecord[];
-  weekly_review?: WeeklyReview;
+  active_old_law?: string;
+  current_week_focus?: string;
+  active_experiments_count: number;
+  unfinished_thought_records_count: number;
 }
+
+/** @deprecated Use TodaySnapshot. Kept for backward-compat. */
+export type TodayData = TodaySnapshot;

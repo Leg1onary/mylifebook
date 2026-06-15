@@ -2,20 +2,31 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { personalContextApi } from '@/api/personalContext';
+import { aiApi } from '@/api/ai';
 import { PersonalContextHint } from '@/components/ai/PersonalContextHint';
+import type { PersonalContextUpdate } from '@/types';
 
-export function PersonalContextPage() {
+type FormValues = {
+  core_beliefs: string;
+  grounding_phrases: string;
+  important_relationships: string;
+  triggers_summary: string;
+  therapy_goals: string;
+};
+
+export default function PersonalContextPage() {
   const queryClient = useQueryClient();
   const [rawText, setRawText] = useState('');
   const [loadingExtract, setLoadingExtract] = useState(false);
   const [extractSuccess, setExtractSuccess] = useState(false);
+  const [extractError, setExtractError] = useState(false);
 
   const { data: context, isLoading } = useQuery({
     queryKey: ['personal-context'],
-    queryFn: personalContextApi.get,
+    queryFn: () => personalContextApi.get().then(r => r.data),
   });
 
-  const { register, handleSubmit, formState: { isDirty } } = useForm({
+  const { register, handleSubmit, formState: { isDirty } } = useForm<FormValues>({
     values: {
       core_beliefs: context?.core_beliefs?.join('\n') ?? '',
       grounding_phrases: context?.grounding_phrases?.join('\n') ?? '',
@@ -28,28 +39,40 @@ export function PersonalContextPage() {
   });
 
   const saveMutation = useMutation({
-    mutationFn: (data: any) => personalContextApi.update({
-      ...data,
-      core_beliefs: data.core_beliefs.split('\n').filter(Boolean),
-      grounding_phrases: data.grounding_phrases.split('\n').filter(Boolean),
-      important_relationships: data.important_relationships
-        ? JSON.parse(data.important_relationships)
-        : [],
-    }),
+    mutationFn: (data: FormValues) => {
+      let relationships: PersonalContextUpdate['important_relationships'] = [];
+      try {
+        relationships = data.important_relationships
+          ? JSON.parse(data.important_relationships)
+          : [];
+      } catch {
+        relationships = [];
+      }
+      const payload: PersonalContextUpdate = {
+        core_beliefs: data.core_beliefs.split('\n').filter(Boolean),
+        grounding_phrases: data.grounding_phrases.split('\n').filter(Boolean),
+        important_relationships: relationships,
+        triggers_summary: data.triggers_summary,
+        therapy_goals: data.therapy_goals,
+      };
+      return personalContextApi.update(payload);
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['personal-context'] }),
   });
 
+  // Используем aiApi.extractProfile (POST /ai/extract-profile), а не /context/raw
   const handleExtract = async () => {
     if (!rawText.trim()) return;
     setLoadingExtract(true);
+    setExtractError(false);
     try {
-      await personalContextApi.extractRaw(rawText);
-      queryClient.invalidateQueries({ queryKey: ['personal-context'] });
+      await aiApi.extractProfile(rawText);
+      await queryClient.invalidateQueries({ queryKey: ['personal-context'] });
       setRawText('');
       setExtractSuccess(true);
-      setTimeout(() => setExtractSuccess(false), 3000);
+      setTimeout(() => setExtractSuccess(false), 4000);
     } catch {
-      // silent
+      setExtractError(true);
     } finally {
       setLoadingExtract(false);
     }
@@ -65,45 +88,61 @@ export function PersonalContextPage() {
 
       <PersonalContextHint />
 
-      {/* AI extraction */}
+      {/* AI extraction — POST /ai/extract-profile */}
       <div className="card">
         <h3>🤖 Извлечь из текста</h3>
-        <p className="text-muted text-sm">Напиши о себе в свободной форме — AI найдёт ключевые паттерны и добавит их в профиль</p>
+        <p className="text-muted text-sm">
+          Напиши о себе в свободной форме — AI найдёт ключевые паттерны и добавит их в профиль
+        </p>
         <textarea
           value={rawText}
           onChange={e => setRawText(e.target.value)}
           rows={4}
           placeholder="Например: я часто боюсь, что меня осудят, мне важно одобрение близких..."
           className="mt-2"
+          disabled={loadingExtract}
         />
         <button
           className="btn btn-primary btn-sm mt-2"
           onClick={handleExtract}
           disabled={loadingExtract || !rawText.trim()}
         >
-          {loadingExtract ? 'Извлекаю...' : 'Извлечь'}
+          {loadingExtract ? 'Извлекаю...' : '✨ Извлечь'}
         </button>
         {extractSuccess && <p className="success-text mt-1">✅ Контекст обновлён</p>}
+        {extractError && <p className="error-text mt-1">Не удалось извлечь. Попробуй ещё раз.</p>}
       </div>
 
-      {/* Manual form */}
+      {/* Manual edit form */}
       <form onSubmit={handleSubmit(d => saveMutation.mutate(d))} className="context-form">
         <div className="form-field">
-          <label>Ключевые убеждения (каждое с новой строки)</label>
-          <textarea {...register('core_beliefs')} rows={4}
-            placeholder="Я должен быть лучшим...\nЕсли я ошибусь, меня осудят..." />
+          <label>Ключевые убеждения</label>
+          <p className="field-hint text-xs text-muted">Каждое с новой строки</p>
+          <textarea
+            {...register('core_beliefs')}
+            rows={4}
+            placeholder="Я должен быть лучшим...\nЕсли я ошибусь, меня осудят..."
+          />
         </div>
 
         <div className="form-field">
-          <label>Заземляющие фразы (до 5, каждая с новой строки)</label>
-          <textarea {...register('grounding_phrases')} rows={3}
-            placeholder="Я в безопасности\nЭто временно" />
+          <label>Заземляющие фразы</label>
+          <p className="field-hint text-xs text-muted">До 5 фраз, каждая с новой строки. Используются в SOS-режиме.</p>
+          <textarea
+            {...register('grounding_phrases')}
+            rows={3}
+            placeholder="Я в безопасности\nЭто временно\nЯ справлялся с этим раньше"
+          />
         </div>
 
         <div className="form-field">
-          <label>Важные отношения (JSON)</label>
-          <textarea {...register('important_relationships')} rows={3}
-            placeholder='[{"name": "Мама", "role": "важна"}]' />
+          <label>Важные отношения</label>
+          <p className="field-hint text-xs text-muted">JSON-массив: [{"name": "Мама", "role": "важна"}]</p>
+          <textarea
+            {...register('important_relationships')}
+            rows={3}
+            placeholder='[{"name": "Мама", "role": "важна"}]'
+          />
         </div>
 
         <div className="form-field">
@@ -115,6 +154,10 @@ export function PersonalContextPage() {
           <label>Цели терапии</label>
           <textarea {...register('therapy_goals')} rows={3} />
         </div>
+
+        {saveMutation.isError && (
+          <p className="error-text">Не удалось сохранить. Попробуй ещё раз.</p>
+        )}
 
         <button
           type="submit"
