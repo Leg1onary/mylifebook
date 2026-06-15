@@ -6,7 +6,7 @@ import { aiApi } from '@/api/ai';
 import { formatDate, getCurrentWeekStart } from '@/lib/dates';
 import { AIWeeklySummaryCard } from '@/components/ai/AIWeeklySummaryCard';
 import { Page } from '@/components/layout/Page';
-import type { WeeklyReviewUpdate } from '@/types';
+import type { WeeklyReviewUpdate, WeeklyReview } from '@/types';
 import styles from './WeeklyReviewPage.module.css';
 
 type ReviewFormFields = Required<Pick<WeeklyReviewUpdate,
@@ -27,6 +27,105 @@ const GUIDED_KEYS = [
   'guided_q1', 'guided_q2', 'guided_q3',
   'guided_q4', 'guided_q5', 'guided_q6',
 ] as const;
+
+function ScoreBar({ label, value }: { label: string; value?: number | null }) {
+  if (value == null) return null;
+  const pct = Math.round((value / 10) * 100);
+  return (
+    <div className={styles.scoreRow}>
+      <span className={styles.scoreLabel}>{label}</span>
+      <div className={styles.scoreBarTrack}>
+        <div className={styles.scoreBarFill} style={{ width: `${pct}%` }} />
+      </div>
+      <span className={styles.scoreValue}>{value.toFixed(1)}</span>
+    </div>
+  );
+}
+
+function WeekMetrics({ review }: { review: WeeklyReview }) {
+  const hasScores = review.avg_mood != null || review.avg_anxiety != null ||
+    review.avg_shame != null || review.avg_loneliness != null;
+  const hasCounts = review.checkins_count != null || review.triggers_count != null ||
+    review.tr_count != null || review.experiments_count != null;
+  const hasTopLaws = (review.top_old_laws?.length ?? 0) > 0;
+  const hasTopTriggers = (review.top_trigger_categories?.length ?? 0) > 0;
+
+  if (!hasScores && !hasCounts && !hasTopLaws && !hasTopTriggers) return null;
+
+  return (
+    <div className={styles.metricsBlock}>
+      <h3 className={styles.metricsTitle}>📊 Статистика недели</h3>
+
+      {hasCounts && (
+        <div className={styles.countsGrid}>
+          {review.checkins_count != null && (
+            <div className={styles.countCard}>
+              <span className={styles.countValue}>{review.checkins_count}</span>
+              <span className={styles.countLabel}>чекинов</span>
+            </div>
+          )}
+          {review.triggers_count != null && (
+            <div className={styles.countCard}>
+              <span className={styles.countValue}>{review.triggers_count}</span>
+              <span className={styles.countLabel}>триггеров</span>
+            </div>
+          )}
+          {review.tr_count != null && (
+            <div className={styles.countCard}>
+              <span className={styles.countValue}>{review.tr_count}</span>
+              <span className={styles.countLabel}>записей мыслей</span>
+            </div>
+          )}
+          {review.experiments_count != null && (
+            <div className={styles.countCard}>
+              <span className={styles.countValue}>{review.experiments_count}</span>
+              <span className={styles.countLabel}>экспериментов</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {hasScores && (
+        <div className={styles.scoresBlock}>
+          <ScoreBar label="Настроение" value={review.avg_mood} />
+          <ScoreBar label="Тревога" value={review.avg_anxiety} />
+          <ScoreBar label="Стыд" value={review.avg_shame} />
+          <ScoreBar label="Одиночество" value={review.avg_loneliness} />
+        </div>
+      )}
+
+      {hasTopLaws && (
+        <div className={styles.topList}>
+          <h4>Топ старых законов</h4>
+          <ul>
+            {review.top_old_laws!.map((item, i) => (
+              <li key={i} className={styles.topItem}>
+                <span className={styles.topRank}>#{i + 1}</span>
+                <span className={styles.topText}>{item.law}</span>
+                <span className={styles.topCount}>{item.count}×</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {hasTopTriggers && (
+        <div className={styles.topList}>
+          <h4>Топ категорий триггеров</h4>
+          <ul>
+            {review.top_trigger_categories!.map((item, i) => (
+              <li key={i} className={styles.topItem}>
+                <span className={styles.topRank}>#{i + 1}</span>
+                <span className={styles.topText}>{item.category}</span>
+                <span className={styles.topCount}>{item.count}×</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function WeeklyReviewPage() {
   const queryClient = useQueryClient();
@@ -91,6 +190,10 @@ export default function WeeklyReviewPage() {
         <time className={styles.subtitle}>{formatDate(weekStart)}</time>
       </div>
 
+      {/* Auto-metrics block — TZ п.19 */}
+      {review && <WeekMetrics review={review} />}
+
+      {/* AI summary */}
       {review?.ai_summary && (
         <AIWeeklySummaryCard summary={review.ai_summary} />
       )}

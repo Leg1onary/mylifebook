@@ -133,7 +133,6 @@ export interface ThoughtRecordCreate {
   situation?: string;
   auto_thought?: string;
   linked_trigger_id?: number;
-  // full set optional for wizard step-by-step saves
   meaning?: string;
   body_response?: string;
   old_law?: string;
@@ -231,6 +230,8 @@ export interface JournalEntry {
   title?: string;
   body: string;
   mood?: number;
+  linked_trigger_id?: number;
+  linked_thought_record_id?: number;
   created_at: string;
   updated_at: string;
 }
@@ -240,21 +241,35 @@ export interface JournalEntryCreate {
   body: string;
   mood?: number;
   entry_date?: string;
+  linked_trigger_id?: number;
+  linked_thought_record_id?: number;
 }
 
-// Personal Context — matches GET /personal-context schema
+// Personal Context — matches backend PersonalContextOut schema exactly
 export interface PersonalContext {
   id: number;
-  triggers?: string[];
-  old_laws?: string[];
-  typical_distortions?: string[];
-  communication_prefs?: string;
-  growth_goals?: string[];
-  context_notes?: string;
+  user_id: number;
+  old_core_belief?: string | null;
+  new_core_belief?: string | null;
+  personal_triggers?: string[] | null;
+  strengths?: string[] | null;
+  grounding_phrases?: string[] | null;
+  therapy_goals?: string | null;
+  important_relationships?: Array<{ name: string; role?: string; note?: string }> | null;
+  ai_context_note?: string | null;
   updated_at: string;
 }
 
-export type PersonalContextUpdate = Omit<PersonalContext, 'id' | 'updated_at'>;
+export interface PersonalContextUpdate {
+  old_core_belief?: string | null;
+  new_core_belief?: string | null;
+  personal_triggers?: string[] | null;
+  strengths?: string[] | null;
+  grounding_phrases?: string[] | null;
+  therapy_goals?: string | null;
+  important_relationships?: Array<{ name: string; role?: string; note?: string }> | null;
+  ai_context_note?: string | null;
+}
 
 // Settings — matches GET /settings schema
 export interface ReminderConfig {

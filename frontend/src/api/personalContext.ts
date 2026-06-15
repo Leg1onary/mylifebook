@@ -6,11 +6,14 @@ export const personalContextApi = {
   get: () =>
     api.get<PersonalContext>('/personal-context'),
 
-  /** PUT /personal-context — partial update */
+  /** PATCH /personal-context — partial update */
   update: (payload: PersonalContextUpdate) =>
-    api.put<PersonalContext>('/personal-context', payload),
+    api.patch<PersonalContext>('/personal-context', payload),
 
-  /** POST /personal-context/extract */
-  extract: (rawText: string, merge = false) =>
-    api.post<PersonalContext>('/personal-context/extract', { raw_text: rawText, merge }),
+  /**
+   * POST /personal-context/raw
+   * Freeform text → AI extracts structured fields and merges into profile
+   */
+  extract: (text: string) =>
+    api.post<PersonalContext>('/personal-context/raw', { text }),
 };

@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { journalApi } from '@/api/journal';
+import { triggersApi } from '@/api/triggers';
 import { formatDate } from '@/lib/dates';
-import type { JournalEntry } from '@/types';
+import type { JournalEntry, TriggerEvent } from '@/types';
 
 const createSchema = z.object({
   title: z.string().optional(),
   body: z.string().min(1, 'Напиши хоть что-нибудь'),
   mood: z.number().min(1).max(10).optional(),
+  linked_trigger_id: z.number().optional(),
 });
 
 type CreateForm = z.infer<typeof createSchema>;
@@ -22,15 +24,27 @@ export function JournalPage() {
 
   const { data: entries = [], isLoading } = useQuery({
     queryKey: ['journal'],
-    queryFn: journalApi.list,
+    queryFn: () => journalApi.list().then((r: { data: JournalEntry[] }) => r.data),
   });
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateForm>({
+  // Fetch recent triggers for linking
+  const { data: triggers = [] } = useQuery({
+    queryKey: ['triggers', 'recent'],
+    queryFn: () => triggersApi.list({ limit: 20 }).then((r: { data: TriggerEvent[] }) => r.data),
+    enabled: showForm,
+  });
+
+  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<CreateForm>({
     resolver: zodResolver(createSchema),
   });
 
   const createMutation = useMutation({
-    mutationFn: journalApi.create,
+    mutationFn: (data: CreateForm) => journalApi.create({
+      title: data.title,
+      body: data.body,
+      mood: data.mood,
+      linked_trigger_id: data.linked_trigger_id,
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['journal'] });
       setShowForm(false);
@@ -63,6 +77,7 @@ export function JournalPage() {
             <label>Заголовок (необязательно)</label>
             <input {...register('title')} placeholder="О чём эта запись?" />
           </div>
+
           <div className="form-field">
             <label>Текст</label>
             <textarea
@@ -73,12 +88,49 @@ export function JournalPage() {
             />
             {errors.body && <span className="error-text">{errors.body.message}</span>}
           </div>
+
           <div className="form-field">
             <label>Настроение (1–10, необязательно)</label>
-            <input type="number" min={1} max={10} {...register('mood', { valueAsNumber: true })} />
+            <input
+              type="number"
+              min={1}
+              max={10}
+              {...register('mood', { valueAsNumber: true })}
+            />
           </div>
+
+          {/* Link to trigger event — TZ п.18 */}
+          {triggers.length > 0 && (
+            <div className="form-field">
+              <label>Связать с триггером (необязательно)</label>
+              <Controller
+                name="linked_trigger_id"
+                control={control}
+                render={({ field }) => (
+                  <select
+                    value={field.value ?? ''}
+                    onChange={e => field.onChange(
+                      e.target.value ? Number(e.target.value) : undefined
+                    )}
+                  >
+                    <option value="">— не связывать —</option>
+                    {triggers.map((t: TriggerEvent) => (
+                      <option key={t.id} value={t.id}>
+                        {formatDate(t.created_at)}: {t.situation.slice(0, 60)}{t.situation.length > 60 ? '…' : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              />
+            </div>
+          )}
+
           <div className="form-actions">
-            <button type="submit" className="btn btn-primary" disabled={createMutation.isPending}>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={createMutation.isPending}
+            >
               {createMutation.isPending ? 'Сохранение...' : 'Сохранить'}
             </button>
           </div>
@@ -98,8 +150,13 @@ export function JournalPage() {
             <div key={entry.id} className="card">
               <div className="card-header">
                 <time className="card-date">{formatDate(entry.entry_date)}</time>
-                {entry.mood && (
+                {entry.mood != null && (
                   <span className="tag tag-muted">настроение {entry.mood}/10</span>
+                )}
+                {entry.linked_trigger_id != null && (
+                  <span className="tag tag-accent" title={`Триггер #${entry.linked_trigger_id}`}>
+                    🔗 триггер
+                  </span>
                 )}
                 <button
                   className="btn btn-ghost btn-icon btn-xs text-error"
