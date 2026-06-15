@@ -18,11 +18,10 @@ export interface AIWeeklySummaryResponse {
 
 export const aiApi = {
   /**
-   * POST /ai/reframe
-   * Body: { thought_record_id: number }
+   * POST /ai/reframe/{thought_record_id}
    */
   reframe: async (thoughtRecordId: number): Promise<AIReframeResponse> => {
-    const { data } = await api.post('/ai/reframe', { thought_record_id: thoughtRecordId });
+    const { data } = await api.post(`/ai/reframe/${thoughtRecordId}`);
     return data;
   },
 
