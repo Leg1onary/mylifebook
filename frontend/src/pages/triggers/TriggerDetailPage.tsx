@@ -41,7 +41,7 @@ export default function TriggerDetailPage() {
       title='Триггер'
       action={
         <button
-          className='btn-icon btn-danger'
+          className='btn btn-icon btn-danger'
           onClick={() => deleteMutation.mutate()}
           aria-label='Удалить'
         >
@@ -114,7 +114,7 @@ export default function TriggerDetailPage() {
           <div className={styles.detailBlock}>
             <p className={styles.detailLabel}>Эмоции</p>
             <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-              {data.emotion_tags.map(tag => (
+              {data.emotion_tags.map((tag: string) => (
                 <span key={tag} className='badge badge-muted'>{tag}</span>
               ))}
             </div>

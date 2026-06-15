@@ -19,7 +19,6 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
-  /* default dark */
   color-scheme: dark;
 }
 
@@ -33,7 +32,6 @@ body {
   color: var(--color-text);
   background: var(--color-bg);
   overscroll-behavior: none;
-  /* Prevent content jumping under bottom nav */
   padding-bottom: var(--bottom-nav-h);
 }
 
@@ -46,22 +44,18 @@ input, textarea, select { font: inherit; color: inherit; background: transparent
 h1,h2,h3,h4,h5,h6 { line-height: 1.2; text-wrap: balance; }
 p, li { text-wrap: pretty; }
 
-/* Focus ring */
 :focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
 
-/* Scrollbar (dark) */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-full); }
 
-/* Selection */
 ::selection { background: var(--color-primary-dim); color: var(--color-text); }
 
-/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -204,6 +198,7 @@ p, li { text-wrap: pretty; }
 .badge-success { background: var(--color-success-dim); color: var(--color-success); }
 .badge-warning { background: var(--color-warning-dim); color: var(--color-warning); }
 .badge-error   { background: var(--color-error-dim);   color: var(--color-error); }
+.badge-muted   { background: var(--color-surface-3);   color: var(--color-text-muted); }
 
 /* Tags (alias for badge — used in legacy components) */
 .tag {
@@ -216,7 +211,7 @@ p, li { text-wrap: pretty; }
   background: var(--color-surface-3);
   color: var(--color-text-muted);
 }
-.tag-muted { background: var(--color-surface-3); color: var(--color-text-muted); }
+.tag-muted  { background: var(--color-surface-3);   color: var(--color-text-muted); }
 .tag-accent { background: var(--color-primary-dim); color: var(--color-primary); }
 
 /* Skeleton shimmer */
@@ -300,7 +295,7 @@ p, li { text-wrap: pretty; }
 }
 
 /* ============================================================
-   Detail page layout (used by Experiment, Trigger, etc.)
+   Detail page layout
    ============================================================ */
 .detail-header {
   display: flex;
@@ -364,7 +359,7 @@ p, li { text-wrap: pretty; }
 }
 
 /* ============================================================
-   Card list layout (used by Journal, Triggers, Experiments)
+   Card list layout
    ============================================================ */
 .card-list {
   display: flex;
@@ -410,7 +405,7 @@ p, li { text-wrap: pretty; }
 }
 
 /* ============================================================
-   Form utilities (used in forms without CSS Modules)
+   Form utilities
    ============================================================ */
 .form-card {
   display: flex;
@@ -479,7 +474,7 @@ p, li { text-wrap: pretty; }
 }
 
 /* ============================================================
-   Empty state (global, used across pages)
+   Empty state (global)
    ============================================================ */
 .empty-state {
   display: flex;
