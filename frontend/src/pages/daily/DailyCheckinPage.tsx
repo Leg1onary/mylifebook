@@ -5,30 +5,31 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { dailyApi } from '@/api/daily'
 import { Page } from '@/components/layout/Page'
+import { RangeSlider, CheckboxField } from '@/components/forms'
 import { format } from 'date-fns'
 import { useUIStore } from '@/store/uiStore'
 import styles from './DailyCheckinPage.module.css'
 
 const EMOTIONS = [
-  { key: 'mood',       label: 'Настроение',  color: 'var(--color-mood)' },
-  { key: 'energy',    label: 'Энергия',    color: 'var(--color-energy)' },
-  { key: 'anxiety',   label: 'Тревога',    color: 'var(--color-anxiety)' },
-  { key: 'shame',     label: 'Стыд',       color: 'var(--color-shame)' },
-  { key: 'loneliness',label: 'Одиночество', color: 'var(--color-loneliness)' },
-  { key: 'anger',     label: 'Злость',     color: 'var(--color-anger)' },
+  { key: 'mood',        label: 'Настроение',   color: 'var(--color-mood)' },
+  { key: 'energy',     label: 'Энергия',     color: 'var(--color-energy)' },
+  { key: 'anxiety',    label: 'Тревога',     color: 'var(--color-anxiety)' },
+  { key: 'shame',      label: 'Стыд',        color: 'var(--color-shame)' },
+  { key: 'loneliness', label: 'Одиночество',  color: 'var(--color-loneliness)' },
+  { key: 'anger',      label: 'Злость',       color: 'var(--color-anger)' },
 ] as const
 
 const schema = z.object({
-  mood:       z.number().min(1).max(10).optional(),
-  energy:     z.number().min(1).max(10).optional(),
-  anxiety:    z.number().min(1).max(10).optional(),
-  shame:      z.number().min(1).max(10).optional(),
-  loneliness: z.number().min(1).max(10).optional(),
-  anger:      z.number().min(1).max(10).optional(),
+  mood:        z.number().min(1).max(10).optional(),
+  energy:      z.number().min(1).max(10).optional(),
+  anxiety:     z.number().min(1).max(10).optional(),
+  shame:       z.number().min(1).max(10).optional(),
+  loneliness:  z.number().min(1).max(10).optional(),
+  anger:       z.number().min(1).max(10).optional(),
   had_trigger: z.boolean(),
-  note_main:  z.string().max(1000).optional(),
-  note_pain:  z.string().max(1000).optional(),
-  note_need:  z.string().max(500).optional(),
+  note_main:   z.string().max(1000).optional(),
+  note_pain:   z.string().max(1000).optional(),
+  note_need:   z.string().max(500).optional(),
 })
 type Form = z.infer<typeof schema>
 
@@ -44,19 +45,19 @@ export default function DailyCheckinPage() {
     retry: false,
   })
 
-  const { control, handleSubmit, watch } = useForm<Form>({
+  const { control, handleSubmit } = useForm<Form>({
     resolver: zodResolver(schema),
     defaultValues: {
-      mood: existing?.mood ?? 5,
-      energy: existing?.energy ?? 5,
-      anxiety: existing?.anxiety ?? 5,
-      shame: existing?.shame ?? 5,
-      loneliness: existing?.loneliness ?? 5,
-      anger: existing?.anger ?? 5,
+      mood:        existing?.mood ?? 5,
+      energy:      existing?.energy ?? 5,
+      anxiety:     existing?.anxiety ?? 5,
+      shame:       existing?.shame ?? 5,
+      loneliness:  existing?.loneliness ?? 5,
+      anger:       existing?.anger ?? 5,
       had_trigger: existing?.had_trigger ?? false,
-      note_main: existing?.note_main ?? '',
-      note_pain: existing?.note_pain ?? '',
-      note_need: existing?.note_need ?? '',
+      note_main:   existing?.note_main ?? '',
+      note_pain:   existing?.note_pain ?? '',
+      note_need:   existing?.note_need ?? '',
     },
   })
 
@@ -76,7 +77,6 @@ export default function DailyCheckinPage() {
     <Page title='Чекин'>
       <form onSubmit={handleSubmit(d => mutation.mutate(d))} className={styles.form}>
 
-        {/* Emotion sliders */}
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Как сейчас?</h2>
           {EMOTIONS.map(({ key, label, color }) => (
@@ -85,38 +85,32 @@ export default function DailyCheckinPage() {
               name={key}
               control={control}
               render={({ field }) => (
-                <div className={styles.sliderRow}>
-                  <div className={styles.sliderLabel}>
-                    <span>{label}</span>
-                    <span className={styles.sliderValue} style={{ color }}>{field.value}</span>
-                  </div>
-                  <input
-                    type='range' min={1} max={10} step={1}
-                    className='slider'
-                    style={{ '--slider-color': color } as React.CSSProperties}
-                    value={field.value ?? 5}
-                    onChange={e => field.onChange(Number(e.target.value))}
-                  />
-                </div>
+                <RangeSlider
+                  label={label}
+                  value={field.value ?? 5}
+                  min={1}
+                  max={10}
+                  color={color}
+                  onChange={field.onChange}
+                />
               )}
             />
           ))}
         </div>
 
-        {/* Trigger checkbox */}
         <Controller
           name='had_trigger'
           control={control}
           render={({ field }) => (
-            <label className={styles.triggerRow}>
-              <input type='checkbox' checked={field.value}
-                onChange={e => field.onChange(e.target.checked)} />
-              <span>Был триггер сегодня</span>
-            </label>
+            <CheckboxField
+              label='Был триггер сегодня'
+              description='Отметь, если что-то вызвало сильную эмоциональную реакцию'
+              checked={field.value}
+              onChange={field.onChange}
+            />
           )}
         />
 
-        {/* Notes */}
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Заметки</h2>
 
