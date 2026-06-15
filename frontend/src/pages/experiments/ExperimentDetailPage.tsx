@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { experimentsApi } from '@/api/experiments';
 import { formatDate } from '@/lib/dates';
+import { Page } from '@/components/layout/Page';
 
 const followUpSchema = z.object({
   actual_result_text: z.string().min(2, 'Опиши что произошло'),
@@ -17,7 +18,7 @@ const followUpSchema = z.object({
 
 type FollowUpForm = z.infer<typeof followUpSchema>;
 
-export function ExperimentDetailPage() {
+export default function ExperimentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -25,7 +26,7 @@ export function ExperimentDetailPage() {
 
   const { data: exp, isLoading, error } = useQuery({
     queryKey: ['experiment', id],
-    queryFn: () => experimentsApi.getById(Number(id)),
+    queryFn: () => experimentsApi.getById(Number(id)).then(r => r.data),
     enabled: !!id,
   });
 
@@ -54,26 +55,37 @@ export function ExperimentDetailPage() {
     },
   });
 
-  if (isLoading) return <div className="page-loading"><div className="spinner" /></div>;
+  if (isLoading) return (
+    <Page>
+      <div className="page-loading"><div className="spinner" /></div>
+    </Page>
+  );
+
   if (error || !exp) return (
-    <div className="page-error">
-      <p>Эксперимент не найден</p>
-      <Link to="/experiments" className="btn btn-primary">К экспериментам</Link>
-    </div>
+    <Page>
+      <div className="page-error">
+        <p>Эксперимент не найден</p>
+        <Link to="/experiments" className="btn btn-primary">К экспериментам</Link>
+      </div>
+    </Page>
   );
 
   const isCompleted = exp.status === 'completed';
 
   return (
-    <div className="detail-page">
+    <Page>
       <div className="detail-header">
         <button onClick={() => navigate(-1)} className="btn btn-ghost btn-icon" aria-label="Назад">←</button>
         <h1>Эксперимент</h1>
         <button
-          onClick={() => { if (confirm('Удалить?')) deleteMutation.mutate(); }}
-          className="btn btn-ghost btn-icon text-error"
+          onClick={() => { if (window.confirm('Удалить эксперимент?')) deleteMutation.mutate(); }}
+          className="btn btn-ghost btn-icon"
           aria-label="Удалить"
-        >🗑</button>
+          style={{ color: 'var(--color-error)' }}
+          disabled={deleteMutation.isPending}
+        >
+          🗑
+        </button>
       </div>
 
       <div className="detail-fields">
@@ -105,6 +117,7 @@ export function ExperimentDetailPage() {
         </div>
       </div>
 
+      {/* Результат если завершён */}
       {isCompleted && (
         <div className="detail-section">
           <h3>Результат</h3>
@@ -137,6 +150,7 @@ export function ExperimentDetailPage() {
         </div>
       )}
 
+      {/* Follow-up форма */}
       {!isCompleted && (
         <div className="detail-actions">
           {!showFollowUp ? (
@@ -174,7 +188,10 @@ export function ExperimentDetailPage() {
 
               <div className="form-field">
                 <label>Страх ПОСЛЕ (1–10)</label>
-                <input type="range" min={1} max={10} {...register('fear_after_score', { valueAsNumber: true })} />
+                <input
+                  type="range" min={1} max={10}
+                  {...register('fear_after_score', { valueAsNumber: true })}
+                />
               </div>
 
               <div className="form-actions">
@@ -193,6 +210,6 @@ export function ExperimentDetailPage() {
           Связанная запись мышления →
         </Link>
       )}
-    </div>
+    </Page>
   );
 }

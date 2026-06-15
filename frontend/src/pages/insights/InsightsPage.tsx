@@ -5,6 +5,7 @@ import {
   BarChart, Bar, ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import { insightsApi } from '@/api/insights';
+import { Page } from '@/components/layout/Page';
 
 const PERIODS = [
   { label: '7 дней', days: 7 },
@@ -12,37 +13,44 @@ const PERIODS = [
   { label: '30 дней', days: 30 },
 ];
 
-const CHART_COLORS = ['#01696f', '#4f98a3', '#bb653b', '#6daa45', '#a86fdf'];
+// Цвета линий: primary, muted teal, warning, error, success
+const TEAL     = '#01696f';
+const TEAL_MID = '#4f98a3';
+const ORANGE   = '#bb653b';
+const RED      = '#a12c7b';
+const PURPLE   = '#a86fdf';
+const CHART_COLORS = [TEAL, TEAL_MID, ORANGE, '#6daa45', PURPLE];
 
-export function InsightsPage() {
+export default function InsightsPage() {
   const [days, setDays] = useState(14);
 
   const { data: moodTrend, isLoading: loadingMood } = useQuery({
     queryKey: ['insights', 'mood-trend', days],
-    queryFn: () => insightsApi.moodTrend(days),
+    queryFn: () => insightsApi.moodTrend(days).then(r => r.data),
   });
 
   const { data: triggerCats, isLoading: loadingTriggers } = useQuery({
     queryKey: ['insights', 'trigger-categories', days],
-    queryFn: () => insightsApi.triggerCategories(days),
+    queryFn: () => insightsApi.triggerCategories(days).then(r => r.data),
   });
 
   const { data: distortions, isLoading: loadingDist } = useQuery({
     queryKey: ['insights', 'distortions', days],
-    queryFn: () => insightsApi.distortions(days),
+    queryFn: () => insightsApi.distortions(days).then(r => r.data),
   });
 
   const { data: scriptStats } = useQuery({
     queryKey: ['insights', 'script-stats', days],
-    queryFn: () => insightsApi.scriptStats(days),
+    queryFn: () => insightsApi.scriptStats(days).then(r => r.data),
   });
 
   return (
-    <div className="page">
+    <Page>
       <div className="page-header">
-        <h1>Аналитика</h1>
+        <h1>Аналитима</h1>
       </div>
 
+      {/* Period selector */}
       <div className="period-selector">
         {PERIODS.map(p => (
           <button
@@ -55,7 +63,7 @@ export function InsightsPage() {
         ))}
       </div>
 
-      {/* Mood trend */}
+      {/* Настроение + энергия (mood trend) */}
       <div className="card insights-card">
         <h3>Динамика настроения</h3>
         {loadingMood ? (
@@ -66,9 +74,16 @@ export function InsightsPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />
               <YAxis domain={[1, 10]} tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Line type="monotone" dataKey="mood" stroke="#01696f" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="energy" stroke="#4f98a3" strokeWidth={2} dot={false} />
+              <Tooltip
+                contentStyle={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '8px',
+                  fontSize: 12,
+                }}
+              />
+              <Line type="monotone" dataKey="mood"    stroke={TEAL}     strokeWidth={2} dot={false} name="Настроение" />
+              <Line type="monotone" dataKey="energy"  stroke={TEAL_MID} strokeWidth={2} dot={false} name="Энергия" />
             </LineChart>
           </ResponsiveContainer>
         ) : (
@@ -76,7 +91,36 @@ export function InsightsPage() {
         )}
       </div>
 
-      {/* Trigger categories */}
+      {/* ТЗ п.20: anxiety + shame + loneliness trend */}
+      <div className="card insights-card">
+        <h3>Тревога, стыд, одиночество</h3>
+        {loadingMood ? (
+          <div className="skeleton skeleton-image" />
+        ) : moodTrend?.length ? (
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={moodTrend} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+              <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
+              <Tooltip
+                contentStyle={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '8px',
+                  fontSize: 12,
+                }}
+              />
+              <Line type="monotone" dataKey="anxiety"    stroke={ORANGE}  strokeWidth={2} dot={false} name="Тревога" />
+              <Line type="monotone" dataKey="shame"      stroke={RED}     strokeWidth={2} dot={false} name="Стыд" />
+              <Line type="monotone" dataKey="loneliness" stroke={PURPLE}  strokeWidth={2} dot={false} name="Одиночество" />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <p className="text-muted">Недостаточно данных</p>
+        )}
+      </div>
+
+      {/* Триггеры по категориям */}
       <div className="card insights-card">
         <h3>Триггеры по категориям</h3>
         {loadingTriggers ? (
@@ -87,8 +131,15 @@ export function InsightsPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
               <XAxis type="number" tick={{ fontSize: 11 }} />
               <YAxis type="category" dataKey="category" tick={{ fontSize: 11 }} width={80} />
-              <Tooltip />
-              <Bar dataKey="count" fill="#01696f" radius={[0, 4, 4, 0]} />
+              <Tooltip
+                contentStyle={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '8px',
+                  fontSize: 12,
+                }}
+              />
+              <Bar dataKey="count" fill={TEAL} radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         ) : (
@@ -96,7 +147,7 @@ export function InsightsPage() {
         )}
       </div>
 
-      {/* Cognitive distortions */}
+      {/* Когнитивные искажения */}
       <div className="card insights-card">
         <h3>Когнитивные искажения</h3>
         {loadingDist ? (
@@ -105,12 +156,19 @@ export function InsightsPage() {
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie data={distortions} dataKey="count" nameKey="distortion" cx="50%" cy="50%" outerRadius={70}>
-                {distortions.map((_: any, index: number) => (
+                {distortions.map((_: { count: number; distortion: string }, index: number) => (
                   <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                 ))}
               </Pie>
               <Legend formatter={(value: string) => <span style={{ fontSize: 11 }}>{value}</span>} />
-              <Tooltip />
+              <Tooltip
+                contentStyle={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '8px',
+                  fontSize: 12,
+                }}
+              />
             </PieChart>
           </ResponsiveContainer>
         ) : (
@@ -118,12 +176,12 @@ export function InsightsPage() {
         )}
       </div>
 
-      {/* Script stats */}
-      {scriptStats && (
+      {/* Паттерны / scriptStats */}
+      {scriptStats && Object.keys(scriptStats).length > 0 && (
         <div className="card insights-card">
           <h3>Паттерны</h3>
           <div className="stats-grid">
-            {Object.entries(scriptStats).map(([key, val]) => (
+            {Object.entries(scriptStats as Record<string, unknown>).map(([key, val]) => (
               <div key={key} className="stat-item">
                 <span className="stat-label">{key}</span>
                 <span className="stat-value">{String(val)}</span>
@@ -132,6 +190,6 @@ export function InsightsPage() {
           </div>
         </div>
       )}
-    </div>
+    </Page>
   );
 }
