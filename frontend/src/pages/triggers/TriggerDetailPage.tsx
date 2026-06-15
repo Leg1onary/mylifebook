@@ -25,15 +25,26 @@ export default function TriggerDetailPage() {
     },
   })
 
-  if (isLoading) return <Page><div className='skeleton' style={{ height: '12rem', borderRadius: 'var(--radius-lg)' }} /></Page>
-  if (!data) return <Page><p style={{ color: 'var(--color-text-muted)' }}>Не найдено</p></Page>
+  if (isLoading) return (
+    <Page>
+      <div className='skeleton' style={{ height: '12rem', borderRadius: 'var(--radius-lg)' }} />
+    </Page>
+  )
+  if (!data) return (
+    <Page>
+      <p style={{ color: 'var(--color-text-muted)' }}>Не найдено</p>
+    </Page>
+  )
 
   return (
     <Page
       title='Триггер'
       action={
-        <button className='btn-icon btn-danger' onClick={() => deleteMutation.mutate()}
-          aria-label='Удалить'>
+        <button
+          className='btn-icon btn-danger'
+          onClick={() => deleteMutation.mutate()}
+          aria-label='Удалить'
+        >
           <Trash2 size={18} />
         </button>
       }
@@ -44,9 +55,16 @@ export default function TriggerDetailPage() {
         </p>
 
         <div className={styles.detailBlock}>
-          <p className={styles.detailLabel}>Ситуация</p>
-          <p className={styles.detailText}>{data.situation || data.description}</p>
+          <p className={styles.detailLabel}>Описание</p>
+          <p className={styles.detailText}>{data.description}</p>
         </div>
+
+        {data.situation && (
+          <div className={styles.detailBlock}>
+            <p className={styles.detailLabel}>Ситуация</p>
+            <p className={styles.detailText}>{data.situation}</p>
+          </div>
+        )}
 
         {data.auto_thought && (
           <div className={styles.detailBlock}>
@@ -69,26 +87,59 @@ export default function TriggerDetailPage() {
           </div>
         )}
 
-        {data.emotion_intensity != null && (
+        {data.old_law && (
           <div className={styles.detailBlock}>
-            <p className={styles.detailLabel}>Интенсивность</p>
-            <p className={styles.intensityBar}>
-              <span style={{ width: `${data.emotion_intensity * 10}%`, background: 'var(--color-warning)' }} />
-            </p>
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>{data.emotion_intensity}/10</p>
+            <p className={styles.detailLabel}>Старый закон</p>
+            <p className={styles.detailText}>{data.old_law}</p>
           </div>
         )}
 
-        {data.category && <span className='badge badge-warning'>{data.category}</span>}
+        {data.emotion_intensity != null && (
+          <div className={styles.detailBlock}>
+            <p className={styles.detailLabel}>Интенсивность</p>
+            <div className={styles.intensityBar}>
+              <span style={{ width: `${data.emotion_intensity * 10}%`, background: 'var(--color-warning)' }} />
+            </div>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
+              {data.emotion_intensity}/10
+            </p>
+          </div>
+        )}
+
+        {data.category && (
+          <span className='badge badge-warning'>{data.category}</span>
+        )}
+
+        {data.emotion_tags && data.emotion_tags.length > 0 && (
+          <div className={styles.detailBlock}>
+            <p className={styles.detailLabel}>Эмоции</p>
+            <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+              {data.emotion_tags.map(tag => (
+                <span key={tag} className='badge badge-muted'>{tag}</span>
+              ))}
+            </div>
+          </div>
+        )}
 
         {!data.linked_thought_record_id && (
           <button
             className='btn btn-ghost'
             style={{ width: '100%', marginTop: 'var(--space-4)' }}
-            onClick={() => navigate(`/thoughts/new?triggerId=${data.id}`)}
+            onClick={() => navigate(`/thoughts/new?trigger_id=${data.id}`)}
           >
             <Brain size={16} />
             Разобрать мысль
+          </button>
+        )}
+
+        {data.linked_thought_record_id && (
+          <button
+            className='btn btn-ghost'
+            style={{ width: '100%', marginTop: 'var(--space-4)' }}
+            onClick={() => navigate(`/thoughts/${data.linked_thought_record_id}`)}
+          >
+            <Brain size={16} />
+            Открыть запись мысли
           </button>
         )}
       </div>
