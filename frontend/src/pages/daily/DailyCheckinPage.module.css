@@ -1,0 +1,8 @@
+.form { display: flex; flex-direction: column; gap: var(--space-5); }
+.section { display: flex; flex-direction: column; gap: var(--space-4); }
+.sectionTitle { font-size: var(--text-base); font-weight: 600; color: var(--color-text-muted); }
+.sliderRow { display: flex; flex-direction: column; gap: var(--space-2); }
+.sliderLabel { display: flex; justify-content: space-between; font-size: var(--text-sm); color: var(--color-text-muted); }
+.sliderValue { font-weight: 700; font-size: var(--text-base); }
+.triggerRow { display: flex; align-items: center; gap: var(--space-3); font-size: var(--text-base); cursor: pointer; padding: var(--space-3) var(--space-4); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.field { display: flex; flex-direction: column; gap: var(--space-2); }

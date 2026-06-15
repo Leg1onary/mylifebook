@@ -1,0 +1,46 @@
+.form { display: flex; flex-direction: column; gap: var(--space-5); }
+.field { display: flex; flex-direction: column; gap: var(--space-2); }
+.err { font-size: var(--text-xs); color: var(--color-error); }
+
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.chip {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  transition: all var(--transition);
+}
+.chip:active { transform: scale(0.95); }
+.chipActive {
+  background: var(--color-warning-dim);
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+}
+.checkRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-base);
+  cursor: pointer;
+}
+
+.detail { display: flex; flex-direction: column; gap: var(--space-4); }
+.detailDate { font-size: var(--text-xs); color: var(--color-text-faint); }
+.detailBlock { display: flex; flex-direction: column; gap: var(--space-1); }
+.detailLabel { font-size: var(--text-xs); color: var(--color-primary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.detailText { font-size: var(--text-base); color: var(--color-text); }
+.intensityBar {
+  height: 6px;
+  background: var(--color-surface-3);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin: var(--space-1) 0;
+}
+.intensityBar span {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.4s ease;
+}
