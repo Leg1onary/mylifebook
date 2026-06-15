@@ -19,6 +19,8 @@ from app.schemas.personal_context import PersonalContextOut
 
 router = APIRouter()
 
+_STREAK_LOOKBACK = 365  # days to look back for streak calculation
+
 
 class TodayResponse(BaseModel):
     today_date: date
@@ -27,6 +29,16 @@ class TodayResponse(BaseModel):
     active_experiments: list[ExperimentOut]
     context: PersonalContextOut | None
     streak_days: int
+
+
+def _calculate_streak(dates: set[date], today: date) -> int:
+    """Count consecutive days ending on today from a set of checkin dates."""
+    streak = 0
+    check = today
+    while check in dates:
+        streak += 1
+        check -= timedelta(days=1)
+    return streak
 
 
 @router.get("/", response_model=TodayResponse)
@@ -70,20 +82,17 @@ async def get_today(
     )
     context = ctx_result.scalar_one_or_none()
 
-    # Streak: consecutive days with a checkin ending today
-    streak = 0
-    check_date = today
-    while True:
-        r = await db.execute(
-            select(DailyCheckin.id).where(
-                DailyCheckin.user_id == user.id,
-                DailyCheckin.entry_date == check_date,
-            )
+    # Streak: single query for last N days, then count in Python
+    lookback_start = today - timedelta(days=_STREAK_LOOKBACK)
+    dates_result = await db.execute(
+        select(DailyCheckin.entry_date).where(
+            DailyCheckin.user_id == user.id,
+            DailyCheckin.entry_date >= lookback_start,
+            DailyCheckin.entry_date <= today,
         )
-        if r.scalar_one_or_none() is None:
-            break
-        streak += 1
-        check_date -= timedelta(days=1)
+    )
+    checkin_dates: set[date] = {row[0] for row in dates_result.all()}
+    streak = _calculate_streak(checkin_dates, today)
 
     return TodayResponse(
         today_date=today,
