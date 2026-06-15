@@ -1,0 +1,31 @@
+.bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: var(--top-bar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-3);
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-divider);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  background: color-mix(in oklab, var(--color-bg) 85%, transparent);
+}
+
+.left, .right {
+  width: 2.5rem;
+  display: flex;
+  align-items: center;
+}
+.right { justify-content: flex-end; }
+
+.title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: 0.01em;
+}

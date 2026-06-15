@@ -1,0 +1,87 @@
+/* ============================================================
+   MyLifeBook — Color Themes
+   Default: dark. Toggle adds data-theme="light" on <html>.
+   ============================================================ */
+
+:root,
+[data-theme='dark'] {
+  /* Surfaces */
+  --color-bg:              #111110;
+  --color-surface:         #161614;
+  --color-surface-2:       #1c1b19;
+  --color-surface-3:       #232220;
+  --color-surface-hover:   #2a2927;
+  --color-border:          #2e2d2b;
+  --color-divider:         #252422;
+
+  /* Text */
+  --color-text:            #e8e6e3;
+  --color-text-muted:      #888580;
+  --color-text-faint:      #504e4b;
+  --color-text-inverse:    #111110;
+
+  /* Primary — teal */
+  --color-primary:         #4f98a3;
+  --color-primary-hover:   #3d8490;
+  --color-primary-active:  #2d6e79;
+  --color-primary-dim:     rgba(79,152,163,0.12);
+
+  /* Semantic */
+  --color-success:         #6daa45;
+  --color-success-dim:     rgba(109,170,69,0.12);
+  --color-warning:         #d4813a;
+  --color-warning-dim:     rgba(212,129,58,0.12);
+  --color-error:           #d16374;
+  --color-error-dim:       rgba(209,99,116,0.12);
+
+  /* Emotion scale colors (for charts) */
+  --color-mood:       #4f98a3;
+  --color-anxiety:    #d4813a;
+  --color-shame:      #a86fdf;
+  --color-loneliness: #5591c7;
+  --color-anger:      #d16374;
+  --color-energy:     #6daa45;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.6);
+}
+
+[data-theme='light'] {
+  --color-bg:              #f6f5f2;
+  --color-surface:         #faf9f7;
+  --color-surface-2:       #ffffff;
+  --color-surface-3:       #f0eeeb;
+  --color-surface-hover:   #eceae6;
+  --color-border:          #dbd9d5;
+  --color-divider:         #e4e2de;
+
+  --color-text:            #1e1d1b;
+  --color-text-muted:      #6b6965;
+  --color-text-faint:      #b0aea9;
+  --color-text-inverse:    #f6f5f2;
+
+  --color-primary:         #01696f;
+  --color-primary-hover:   #0c4e54;
+  --color-primary-active:  #0f3638;
+  --color-primary-dim:     rgba(1,105,111,0.1);
+
+  --color-success:         #437a22;
+  --color-success-dim:     rgba(67,122,34,0.1);
+  --color-warning:         #964219;
+  --color-warning-dim:     rgba(150,66,25,0.1);
+  --color-error:           #a12c7b;
+  --color-error-dim:       rgba(161,44,123,0.1);
+
+  --color-mood:       #01696f;
+  --color-anxiety:    #964219;
+  --color-shame:      #7a39bb;
+  --color-loneliness: #006494;
+  --color-anger:      #a12c7b;
+  --color-energy:     #437a22;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.1);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.14);
+}
