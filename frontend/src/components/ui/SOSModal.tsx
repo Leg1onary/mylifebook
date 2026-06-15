@@ -10,12 +10,12 @@ import styles from './SOSModal.module.css';
 
 // ТЗ п.21: полный SOS flow
 const sosSchema = z.object({
-  situation_text: z.string().min(2, 'Опиши что происходит'),
-  first_thought_text: z.string().optional(),
-  emotion_score: z.number().min(0).max(10),
-  body_reaction_text: z.string().optional(),
-  old_law_text: z.string().optional(),
-  action_urge_text: z.string().optional(),
+  situation:      z.string().min(2, 'Опиши что происходит'),
+  auto_thought:   z.string().optional(),
+  emotion_intensity: z.number().min(0).max(10),
+  body_response:  z.string().optional(),
+  old_law:        z.string().optional(),
+  impulse:        z.string().optional(),
 });
 
 type SOSForm = z.infer<typeof sosSchema>;
@@ -24,7 +24,7 @@ const STEPS = [
   {
     id: 1,
     label: 'Что происходит?',
-    field: 'situation_text' as const,
+    field: 'situation' as const,
     type: 'textarea' as const,
     hint: 'Опиши ситуацию кратко',
     required: true,
@@ -32,7 +32,7 @@ const STEPS = [
   {
     id: 2,
     label: 'Первая мысль',
-    field: 'first_thought_text' as const,
+    field: 'auto_thought' as const,
     type: 'textarea' as const,
     hint: 'Что мелькнуло в голове?',
     required: false,
@@ -40,7 +40,7 @@ const STEPS = [
   {
     id: 3,
     label: 'Интенсивность (0–10)',
-    field: 'emotion_score' as const,
+    field: 'emotion_intensity' as const,
     type: 'range' as const,
     hint: 'Насколько сильно накрыло?',
     required: true,
@@ -48,7 +48,7 @@ const STEPS = [
   {
     id: 4,
     label: 'Какой старый закон?',
-    field: 'old_law_text' as const,
+    field: 'old_law' as const,
     type: 'textarea' as const,
     hint: 'Какой внутренний приговор включился?',
     required: false,
@@ -56,7 +56,7 @@ const STEPS = [
   {
     id: 5,
     label: 'Импульс',
-    field: 'action_urge_text' as const,
+    field: 'impulse' as const,
     type: 'textarea' as const,
     hint: 'Что хочется сделать прямо сейчас?',
     required: false,
@@ -71,7 +71,6 @@ export function SOSModal() {
   const [saved, setSaved] = React.useState(false);
   const [savedId, setSavedId] = React.useState<number | null>(null);
 
-  // Загрузить grounding phrase из personal context
   const { data: context } = useQuery({
     queryKey: ['personal-context'],
     queryFn: personalContextApi.get,
@@ -82,19 +81,21 @@ export function SOSModal() {
 
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<SOSForm>({
     resolver: zodResolver(sosSchema),
-    defaultValues: { emotion_score: 5 },
+    defaultValues: { emotion_intensity: 5 },
   });
 
-  const emotionScore = watch('emotion_score');
+  const emotionScore = watch('emotion_intensity');
 
   const saveMutation = useMutation({
     mutationFn: (data: SOSForm) => triggersApi.create({
-      situation_text: data.situation_text,
-      first_thought_text: data.first_thought_text,
-      body_reaction_text: data.body_reaction_text,
-      action_urge_text: data.action_urge_text,
-      old_law_text: data.old_law_text,
-      intensity_score: data.emotion_score,
+      // description is required — derive from situation (max 100 chars)
+      description: data.situation.slice(0, 100),
+      situation:        data.situation,
+      auto_thought:     data.auto_thought,
+      body_response:    data.body_response,
+      impulse:          data.impulse,
+      old_law:          data.old_law,
+      emotion_intensity: data.emotion_intensity,
     }),
     onSuccess: (res) => {
       setSavedId(res.data?.id ?? null);
@@ -102,14 +103,12 @@ export function SOSModal() {
     },
   });
 
-  // Escape to close
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, []);
 
-  // Сброс состояния при закрытии
   const handleClose = () => {
     closeSOS();
     setTimeout(() => {
@@ -122,7 +121,6 @@ export function SOSModal() {
 
   if (!sosOpen) return null;
 
-  // Сохранён — экран с граундингом и CTA
   if (saved) {
     return (
       <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="SOS сохранён">
@@ -131,7 +129,6 @@ export function SOSModal() {
             <div className={styles.savedIcon}>✅</div>
             <p className={styles.savedTitle}>Момент зафиксирован</p>
 
-            {/* Grounding phrase из personal context */}
             {groundingPhrase && (
               <div className={styles.groundingCard}>
                 <p className={styles.groundingLabel}>Сейчас:</p>
@@ -143,12 +140,10 @@ export function SOSModal() {
               <button className="btn btn-ghost btn-sm" onClick={handleClose}>
                 Закрыть
               </button>
-              {/* CTA: вернуться позже к полному thought record */}
               <button
                 className="btn btn-primary btn-sm"
                 onClick={() => {
                   handleClose();
-                  // Короткая пауза чтобы modal успел закрыться
                   setTimeout(() => {
                     window.location.href = '/thoughts/new';
                   }, 350);
@@ -179,7 +174,6 @@ export function SOSModal() {
           <button className="btn btn-ghost btn-icon" onClick={handleClose} aria-label="Закрыть">✕</button>
         </div>
 
-        {/* Progress dots */}
         <div className={styles.progress} role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={STEPS.length}>
           {STEPS.map(s => (
             <div key={s.id} className={`${styles.dot} ${step >= s.id ? styles.dotActive : ''}`} />
@@ -201,22 +195,22 @@ export function SOSModal() {
                   min={0}
                   max={10}
                   step={1}
-                  {...register('emotion_score', { valueAsNumber: true })}
+                  {...register('emotion_intensity', { valueAsNumber: true })}
                   className={styles.range}
                 />
                 <span className={styles.rangeValue}>{emotionScore ?? 5}</span>
               </div>
             ) : (
               <textarea
-                {...register(currentStep.field as Exclude<StepField, 'emotion_score'>)}
+                {...register(currentStep.field as Exclude<StepField, 'emotion_intensity'>)}
                 rows={3}
                 autoFocus
                 className={errors[currentStep.field as keyof SOSForm] ? styles.inputError : ''}
               />
             )}
 
-            {currentStep.field === 'situation_text' && errors.situation_text && (
-              <span className={styles.errorText}>{errors.situation_text.message}</span>
+            {currentStep.field === 'situation' && errors.situation && (
+              <span className={styles.errorText}>{errors.situation.message}</span>
             )}
           </div>
 
