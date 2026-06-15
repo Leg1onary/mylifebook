@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="#111110"/>
+  <!-- Teal card -->
+  <rect x="72" y="72" width="368" height="368" rx="56" fill="#4f98a3"/>
+  <!-- Inner lighter rect -->
+  <rect x="100" y="100" width="312" height="312" rx="40" fill="#5faab5"/>
+  <!-- Left page -->
+  <rect x="128" y="128" width="108" height="256" rx="14" fill="#e8f4f5"/>
+  <!-- Right page -->
+  <rect x="276" y="128" width="108" height="256" rx="14" fill="#d0eaed"/>
+  <!-- Lines on left page -->
+  <rect x="144" y="168" width="76" height="13" rx="6" fill="#4f98a3"/>
+  <rect x="144" y="210" width="76" height="13" rx="6" fill="#4f98a3"/>
+  <rect x="144" y="252" width="76" height="13" rx="6" fill="#4f98a3"/>
+  <!-- Lines on right page -->
+  <rect x="292" y="168" width="76" height="13" rx="6" fill="#3d8490"/>
+  <rect x="292" y="210" width="76" height="13" rx="6" fill="#3d8490"/>
+  <!-- Heart accent -->
+  <circle cx="318" cy="328" r="22" fill="#d16374"/>
+  <circle cx="362" cy="328" r="22" fill="#d16374"/>
+  <polygon points="296,340 384,340 340,390" fill="#d16374"/>
+</svg>
