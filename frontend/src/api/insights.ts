@@ -1,8 +1,23 @@
-import { api } from './client'
+import { apiClient } from './client';
 
 export const insightsApi = {
-  moodTrend:         (params?: { from?: string; to?: string }) => api.get('/insights/mood-trend', { params }),
-  triggerCategories: (params?: { from?: string; to?: string }) => api.get('/insights/trigger-categories', { params }),
-  distortions:       (params?: { from?: string; to?: string }) => api.get('/insights/distortions', { params }),
-  scriptStats:       () => api.get('/insights/script-stats'),
-}
+  moodTrend: async (days = 14) => {
+    const { data } = await apiClient.get('/insights/mood-trend', { params: { days } });
+    return data;
+  },
+
+  triggerCategories: async (days = 14) => {
+    const { data } = await apiClient.get('/insights/trigger-categories', { params: { days } });
+    return data;
+  },
+
+  distortions: async (days = 14) => {
+    const { data } = await apiClient.get('/insights/distortions', { params: { days } });
+    return data;
+  },
+
+  scriptStats: async (days = 14) => {
+    const { data } = await apiClient.get('/insights/script-stats', { params: { days } });
+    return data;
+  },
+};

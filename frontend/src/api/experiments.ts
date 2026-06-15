@@ -1,20 +1,28 @@
-import { api } from './client'
-import type { Experiment, ExperimentCreate, ExperimentUpdate } from '@/types/experiment'
-import type { PaginatedResponse } from '@/types/common'
+import { apiClient } from './client';
+import type { Experiment, ExperimentCreate, ExperimentUpdate } from '@/types';
 
 export const experimentsApi = {
-  list: (params?: { status?: string }) =>
-    api.get<PaginatedResponse<Experiment>>('/experiments', { params }),
+  list: async (params?: { status?: string }): Promise<Experiment[]> => {
+    const { data } = await apiClient.get('/experiments', { params });
+    return data;
+  },
 
-  get: (id: number) =>
-    api.get<Experiment>(`/experiments/${id}`),
+  getById: async (id: number): Promise<Experiment> => {
+    const { data } = await apiClient.get(`/experiments/${id}`);
+    return data;
+  },
 
-  create: (data: ExperimentCreate) =>
-    api.post<Experiment>('/experiments', data),
+  create: async (payload: ExperimentCreate): Promise<Experiment> => {
+    const { data } = await apiClient.post('/experiments', payload);
+    return data;
+  },
 
-  update: (id: number, data: ExperimentUpdate) =>
-    api.patch<Experiment>(`/experiments/${id}`, data),
+  update: async (id: number, payload: ExperimentUpdate): Promise<Experiment> => {
+    const { data } = await apiClient.patch(`/experiments/${id}`, payload);
+    return data;
+  },
 
-  delete: (id: number) =>
-    api.delete(`/experiments/${id}`),
-}
+  delete: async (id: number): Promise<void> => {
+    await apiClient.delete(`/experiments/${id}`);
+  },
+};

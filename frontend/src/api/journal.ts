@@ -1,20 +1,28 @@
-import { api } from './client'
-import type { JournalEntry, JournalEntryCreate, JournalEntryUpdate } from '@/types/journal'
-import type { PaginatedResponse } from '@/types/common'
+import { apiClient } from './client';
+import type { JournalEntry, JournalEntryCreate } from '@/types';
 
 export const journalApi = {
-  list: (params?: { since?: string; until?: string; page?: number; per_page?: number }) =>
-    api.get<PaginatedResponse<JournalEntry>>('/journal', { params }),
+  list: async (): Promise<JournalEntry[]> => {
+    const { data } = await apiClient.get('/journal');
+    return data;
+  },
 
-  get: (id: number) =>
-    api.get<JournalEntry>(`/journal/${id}`),
+  getById: async (id: number): Promise<JournalEntry> => {
+    const { data } = await apiClient.get(`/journal/${id}`);
+    return data;
+  },
 
-  create: (data: JournalEntryCreate) =>
-    api.post<JournalEntry>('/journal', data),
+  create: async (payload: JournalEntryCreate): Promise<JournalEntry> => {
+    const { data } = await apiClient.post('/journal', payload);
+    return data;
+  },
 
-  update: (id: number, data: JournalEntryUpdate) =>
-    api.patch<JournalEntry>(`/journal/${id}`, data),
+  update: async (id: number, payload: Partial<JournalEntryCreate>): Promise<JournalEntry> => {
+    const { data } = await apiClient.patch(`/journal/${id}`, payload);
+    return data;
+  },
 
-  delete: (id: number) =>
-    api.delete(`/journal/${id}`),
-}
+  delete: async (id: number): Promise<void> => {
+    await apiClient.delete(`/journal/${id}`);
+  },
+};

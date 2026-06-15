@@ -1,20 +1,24 @@
-import { api } from './client'
-import type { WeeklyReview, WeeklyReviewUpdate } from '@/types/weekly'
-import type { PaginatedResponse } from '@/types/common'
+import { apiClient } from './client';
+import type { WeeklyReview, WeeklyReviewUpdate } from '@/types';
 
 export const weeklyApi = {
-  current: () =>
-    api.get<WeeklyReview>('/weekly/current'),
+  getCurrent: async (): Promise<WeeklyReview> => {
+    const { data } = await apiClient.get('/weekly/current');
+    return data;
+  },
 
-  list: (params?: { limit?: number }) =>
-    api.get<PaginatedResponse<WeeklyReview>>('/weekly', { params }),
+  getByWeekStart: async (weekStart: string): Promise<WeeklyReview> => {
+    const { data } = await apiClient.get(`/weekly/${weekStart}`);
+    return data;
+  },
 
-  get: (weekStart: string) =>
-    api.get<WeeklyReview>(`/weekly/${weekStart}`),
+  list: async (): Promise<WeeklyReview[]> => {
+    const { data } = await apiClient.get('/weekly');
+    return data;
+  },
 
-  update: (weekStart: string, data: WeeklyReviewUpdate) =>
-    api.patch<WeeklyReview>(`/weekly/${weekStart}`, data),
-
-  generateInsights: (weekStart: string) =>
-    api.post<WeeklyReview>('/ai/weekly-insights', { week_start: weekStart }),
-}
+  update: async (weekStart: string, payload: WeeklyReviewUpdate): Promise<WeeklyReview> => {
+    const { data } = await apiClient.patch(`/weekly/${weekStart}`, payload);
+    return data;
+  },
+};

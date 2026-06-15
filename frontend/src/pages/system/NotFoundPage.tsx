@@ -1,13 +1,15 @@
-import { Link } from 'react-router-dom'
-import styles from './NotFoundPage.module.css'
+import React from 'react';
+import { Link } from 'react-router-dom';
 
-export default function NotFoundPage() {
+export function NotFoundPage() {
   return (
-    <div className={styles.wrap}>
-      <span className={styles.code}>404</span>
-      <h1 className={styles.title}>Страница не найдена</h1>
-      <p className={styles.sub}>Возможно, ты перешёл не туда</p>
-      <Link to='/today' className='btn btn-primary'>На главную</Link>
+    <div className="system-page">
+      <div className="empty-state">
+        <div className="empty-state-icon" style={{ fontSize: '3rem' }}>🔍</div>
+        <h2>Страница не найдена</h2>
+        <p>Такой страницы не существует</p>
+        <Link to="/today" className="btn btn-primary">На главную</Link>
+      </div>
     </div>
-  )
+  );
 }
