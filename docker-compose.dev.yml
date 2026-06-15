@@ -1,26 +1,17 @@
 version: "3.9"
-
-# Переопределяет docker-compose.yml для локальной разработки.
-# Запуск: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Dev override: adds hot-reload + mounts source code
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 
 services:
+  db:
+    ports:
+      - "5432:5432"
 
   backend:
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     volumes:
       - ./backend:/app
-      - db_data:/data
-    command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-    ports:
-      - "8000:8000"
-
-  frontend:
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    command: npm run dev -- --host 0.0.0.0
-    ports:
-      - "5173:5173"
-
-  nginx:
-    profiles:
-      - prod
+    environment:
+      DEBUG: "true"

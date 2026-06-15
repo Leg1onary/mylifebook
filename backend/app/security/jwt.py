@@ -8,23 +8,20 @@ from app.config import get_settings
 settings = get_settings()
 
 
-def create_access_token(subject: int | str, expires_delta: timedelta | None = None) -> str:
-    """Create a signed JWT access token."""
-    expire = datetime.now(timezone.utc) + (
-        expires_delta or timedelta(minutes=settings.access_token_expire_minutes)
-    )
+def create_access_token(subject: str | int, extra: dict[str, Any] | None = None) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
     payload: dict[str, Any] = {
         "sub": str(subject),
         "exp": expire,
         "iat": datetime.now(timezone.utc),
     }
+    if extra:
+        payload.update(extra)
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 
 
 def decode_access_token(token: str) -> dict[str, Any] | None:
-    """Decode and verify a JWT. Returns payload dict or None if invalid."""
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
-        return payload
+        return jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
     except JWTError:
         return None
