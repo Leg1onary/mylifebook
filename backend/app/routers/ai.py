@@ -1,4 +1,4 @@
-"""AI endpoints — weekly insight generation via OpenRouter."""
+"""AI endpoints: weekly insight generation and thought reframing via OpenRouter."""
 import json
 from datetime import date, timedelta
 
@@ -21,10 +21,30 @@ router = APIRouter()
 settings = get_settings()
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+_HEADERS = {
+    "HTTP-Referer": "https://mylifebook.ru",
+    "X-Title": "MyLifeBook",
+}
 
 
 class AIInsightRequest(BaseModel):
     week_start: date
+
+
+class ReframeRequest(BaseModel):
+    automatic_thought: str
+    situation: str | None = None
+    distortions: list[str] | None = None
+
+
+class ReframeResponse(BaseModel):
+    alternative_thought: str
+    rationale: str
+    questions: list[str]  # Socratic questions to consider
+
+
+def _auth_headers() -> dict:
+    return {**_HEADERS, "Authorization": f"Bearer {settings.openrouter_api_key}"}
 
 
 async def _fetch_ai_insights(
@@ -36,52 +56,47 @@ async def _fetch_ai_insights(
     context_block = ""
     if context:
         context_block = (
-            f"Старое убеждение: {context.old_core_belief or '-'}\n"
-            f"Новое убеждение: {context.new_core_belief or '-'}\n"
-            f"Личные триггеры: {', '.join(context.personal_triggers or [])}\n"
+            f"\u0421\u0442\u0430\u0440\u043e\u0435 \u0443\u0431\u0435\u0436\u0434\u0435\u043d\u0438\u0435: {context.old_core_belief or '-'}\n"
+            f"\u041d\u043e\u0432\u043e\u0435 \u0443\u0431\u0435\u0436\u0434\u0435\u043d\u0438\u0435: {context.new_core_belief or '-'}\n"
+            f"\u041b\u0438\u0447\u043d\u044b\u0435 \u0442\u0440\u0438\u0433\u0433\u0435\u0440\u044b: {', '.join(context.personal_triggers or [])}\n"
         )
 
     checkin_lines = "\n".join(
-        f"- {c.entry_date}: настроение {c.mood}/10, тревога {c.anxiety}/10, "
-        f"старая схема сработала: {'да' if c.old_script_triggered else 'нет'}, "
-        f"устоял: {'да' if c.old_script_resisted else 'нет'}"
+        f"- {c.entry_date}: \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043d\u0438\u0435 {c.mood}/10, \u0442\u0440\u0435\u0432\u043e\u0433\u0430 {c.anxiety}/10, "
+        f"\u0441\u0442\u0430\u0440\u0430\u044f \u0441\u0445\u0435\u043c\u0430 \u0441\u0440\u0430\u0431\u043e\u0442\u0430\u043b\u0430: {'\u0434\u0430' if c.old_script_triggered else '\u043d\u0435\u0442'}, "
+        f"\u0443\u0441\u0442\u043e\u044f\u043b: {'\u0434\u0430' if c.old_script_resisted else '\u043d\u0435\u0442'}"
         for c in checkins
     )
 
     thought_lines = "\n".join(
-        f"- Ситуация: {t.situation[:150]}... | Мысль: {t.automatic_thought[:150]}..."
+        f"- \u0421\u0438\u0442\u0443\u0430\u0446\u0438\u044f: {t.situation[:150] if t.situation else '—'}... | \u041c\u044b\u0441\u043b\u044c: {t.automatic_thought[:150] if t.automatic_thought else '—'}..."
         for t in thoughts[:5]
     )
 
-    prompt = f"""Ты — тёплый, прямой психолог-помощник. Проанализируй неделю пользователя и дай честный, конкретный обзор без шаблонных фраз.
+    prompt = f"""\u0422\u044b \u2014 \u0442\u0451\u043f\u043b\u044b\u0439, \u043f\u0440\u044f\u043c\u043e\u0439 \u043f\u0441\u0438\u0445\u043e\u043b\u043e\u0433-\u043f\u043e\u043c\u043e\u0449\u043d\u0438\u043a. \u041f\u0440\u043e\u0430\u043d\u0430\u043b\u0438\u0437\u0438\u0440\u0443\u0439 \u043d\u0435\u0434\u0435\u043b\u044e \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \u0438 \u0434\u0430\u0439 \u0447\u0435\u0441\u0442\u043d\u044b\u0439, \u043a\u043e\u043d\u043a\u0440\u0435\u0442\u043d\u044b\u0439 \u043e\u0431\u0437\u043e\u0440 \u0431\u0435\u0437 \u0448\u0430\u0431\u043b\u043e\u043d\u043d\u044b\u0445 \u0444\u0440\u0430\u0437.
 
-Неделя: {review.week_start} — {week_end}
-Средние показатели: настроение {review.avg_mood:.1f}/10, энергия {review.avg_energy:.1f}/10, тревога {review.avg_anxiety:.1f}/10
-Чекины: {review.checkins_count} из 7 дней
-Старая схема сработала: {review.old_script_triggered_days} дней, устоял: {review.old_script_resisted_days} дней
-Триггеры зафиксированы: {review.trigger_events_count}
+\u041d\u0435\u0434\u0435\u043b\u044f: {review.week_start} \u2014 {week_end}
+\u0421\u0440\u0435\u0434\u043d\u0438\u0435 \u043f\u043e\u043a\u0430\u0437\u0430\u0442\u0435\u043b\u0438: \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043d\u0438\u0435 {review.avg_mood:.1f}/10, \u044d\u043d\u0435\u0440\u0433\u0438\u044f {review.avg_energy:.1f}/10, \u0442\u0440\u0435\u0432\u043e\u0433\u0430 {review.avg_anxiety:.1f}/10
+\u0427\u0435\u043a\u0438\u043d\u044b: {review.checkins_count} \u0438\u0437 7 \u0434\u043d\u0435\u0439
+\u0421\u0442\u0430\u0440\u0430\u044f \u0441\u0445\u0435\u043c\u0430 \u0441\u0440\u0430\u0431\u043e\u0442\u0430\u043b\u0430: {review.old_script_triggered_days} \u0434\u043d\u0435\u0439, \u0443\u0441\u0442\u043e\u044f\u043b: {review.old_script_resisted_days} \u0434\u043d\u0435\u0439
+\u0422\u0440\u0438\u0433\u0433\u0435\u0440\u044b \u0437\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u043d\u044b: {review.trigger_events_count}
 
-Контекст пользователя:
+\u041a\u043e\u043d\u0442\u0435\u043a\u0441\u0442 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f:
 {context_block}
 
-Ежедневные данные:
+\u0415\u0436\u0435\u0434\u043d\u0435\u0432\u043d\u044b\u0435 \u0434\u0430\u043d\u043d\u044b\u0435:
 {checkin_lines}
 
-Записи мыслей:
+\u0417\u0430\u043f\u0438\u0441\u0438 \u043c\u044b\u0441\u043b\u0435\u0439:
 {thought_lines}
 
-Ответь строго в JSON:
+\u041e\u0442\u0432\u0435\u0442\u044c \u0441\u0442\u0440\u043e\u0433\u043e \u0432 JSON:
 {{
-  "insights": "3-4 предложения честного разбора недели",
-  "patterns": ["паттерн 1", "паттерн 2"],
-  "suggestions": ["конкретное действие 1", "конкретное действие 2", "конкретное действие 3"]
+  "insights": "3-4 \u043f\u0440\u0435\u0434\u043b\u043e\u0436\u0435\u043d\u0438\u044f \u0447\u0435\u0441\u0442\u043d\u043e\u0433\u043e \u0440\u0430\u0437\u0431\u043e\u0440\u0430 \u043d\u0435\u0434\u0435\u043b\u0438",
+  "patterns": ["\u043f\u0430\u0442\u0442\u0435\u0440\u043d 1", "\u043f\u0430\u0442\u0442\u0435\u0440\u043d 2"],
+  "suggestions": ["\u043a\u043e\u043d\u043a\u0440\u0435\u0442\u043d\u043e\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 1", "\u043a\u043e\u043d\u043a\u0440\u0435\u0442\u043d\u043e\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 2", "\u043a\u043e\u043d\u043a\u0440\u0435\u0442\u043d\u043e\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 3"]
 }}"""
 
-    headers = {
-        "Authorization": f"Bearer {settings.openrouter_api_key}",
-        "HTTP-Referer": "https://mylifebook.ru",
-        "X-Title": "MyLifeBook",
-    }
     payload = {
         "model": settings.openrouter_model,
         "messages": [{"role": "user", "content": prompt}],
@@ -90,11 +105,10 @@ async def _fetch_ai_insights(
     }
 
     async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.post(OPENROUTER_URL, json=payload, headers=headers)
+        resp = await client.post(OPENROUTER_URL, json=payload, headers=_auth_headers())
         resp.raise_for_status()
 
     raw = resp.json()["choices"][0]["message"]["content"]
-    # Extract JSON block if wrapped in markdown code fences
     if "```" in raw:
         raw = raw.split("```")[1].removeprefix("json").strip()
     return json.loads(raw)
@@ -117,43 +131,101 @@ async def generate_weekly_insights(
     )
     review = review_result.scalar_one_or_none()
     if not review:
-        raise HTTPException(status_code=404, detail="Weekly review not found — generate it first via GET /weekly/{week_start}")
+        raise HTTPException(
+            status_code=404,
+            detail="Weekly review not found \u2014 generate it first via GET /weekly/{week_start}",
+        )
 
     week_end = body.week_start + timedelta(days=6)
 
-    checkins_result = await db.execute(
-        select(DailyCheckin).where(
-            DailyCheckin.user_id == user.id,
-            DailyCheckin.entry_date >= body.week_start,
-            DailyCheckin.entry_date <= week_end,
+    checkins = (
+        await db.execute(
+            select(DailyCheckin).where(
+                DailyCheckin.user_id == user.id,
+                DailyCheckin.entry_date >= body.week_start,
+                DailyCheckin.entry_date <= week_end,
+            )
         )
-    )
-    checkins = checkins_result.scalars().all()
+    ).scalars().all()
 
-    thoughts_result = await db.execute(
-        select(ThoughtRecord).where(
-            ThoughtRecord.user_id == user.id,
-            ThoughtRecord.created_at >= body.week_start,
-            ThoughtRecord.created_at <= week_end,
-        ).limit(10)
-    )
-    thoughts = thoughts_result.scalars().all()
+    thoughts = (
+        await db.execute(
+            select(ThoughtRecord).where(
+                ThoughtRecord.user_id == user.id,
+                ThoughtRecord.created_at >= body.week_start,
+                ThoughtRecord.created_at <= week_end,
+                ThoughtRecord.is_draft == False,  # noqa: E712 — only completed records
+            ).limit(10)
+        )
+    ).scalars().all()
 
-    context_result = await db.execute(
-        select(PersonalContext).where(PersonalContext.user_id == user.id)
-    )
-    context = context_result.scalar_one_or_none()
+    context = (
+        await db.execute(
+            select(PersonalContext).where(PersonalContext.user_id == user.id)
+        )
+    ).scalar_one_or_none()
 
-    try:
-        result = await _fetch_ai_insights(user, review, checkins, thoughts, context)
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"AI generation failed: {str(e)}")
+    result = await _fetch_ai_insights(user, review, checkins, thoughts, context)
 
-    from datetime import datetime, timezone
     review.ai_insights = result.get("insights")
-    review.ai_patterns = [{"pattern": p} for p in result.get("patterns", [])]
     review.ai_suggestions = result.get("suggestions", [])
-    review.ai_generated_at = datetime.now(timezone.utc)
-
+    review.ai_patterns = result.get("patterns", [])
     await db.flush()
     return review
+
+
+@router.post("/reframe", response_model=ReframeResponse)
+async def reframe_thought(
+    body: ReframeRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """AI-assisted reframing of an automatic thought.
+    Returns an alternative thought, brief rationale, and Socratic questions.
+    """
+    if not settings.openrouter_api_key:
+        raise HTTPException(status_code=503, detail="AI service not configured")
+
+    distortions_block = ""
+    if body.distortions:
+        distortions_block = f"\u041e\u043f\u0440\u0435\u0434\u0435\u043b\u0451\u043d\u043d\u044b\u0435 \u0438\u0441\u043a\u0430\u0436\u0435\u043d\u0438\u044f: {', '.join(body.distortions)}\n"
+
+    situation_block = ""
+    if body.situation:
+        situation_block = f"\u0421\u0438\u0442\u0443\u0430\u0446\u0438\u044f: {body.situation}\n"
+
+    prompt = f"""\u0422\u044b \u2014 \u043e\u043f\u044b\u0442\u043d\u044b\u0439 CBT-\u0442\u0435\u0440\u0430\u043f\u0435\u0432\u0442. \u041f\u043e\u043c\u043e\u0433\u0438 \u0447\u0435\u043b\u043e\u0432\u0435\u043a\u0443 \u043f\u0435\u0440\u0435\u0444\u043e\u0440\u043c\u0443\u043b\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0443\u044e \u043c\u044b\u0441\u043b\u044c.
+\u0411\u0443\u0434\u044c \u043f\u0440\u044f\u043c\u044b\u043c \u0438 \u0442\u0451\u043f\u043b\u044b\u043c. \u041d\u0435 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0439 \u0448\u0430\u0431\u043b\u043e\u043d\u043d\u044b\u0435 \u0430\u0444\u0444\u0438\u0440\u043c\u0430\u0446\u0438\u0438. \u041e\u0442\u0432\u0435\u0447\u0430\u0439 \u043d\u0430 \u0440\u0443\u0441\u0441\u043a\u043e\u043c.
+
+{situation_block}\u0410\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043c\u044b\u0441\u043b\u044c: \"{body.automatic_thought}\"
+{distortions_block}
+\u041e\u0442\u0432\u0435\u0442\u044c \u0441\u0442\u0440\u043e\u0433\u043e \u0432 JSON:
+{{
+  "alternative_thought": "\u0430\u043b\u044c\u0442\u0435\u0440\u043d\u0430\u0442\u0438\u0432\u043d\u0430\u044f \u0444\u043e\u0440\u043c\u0443\u043b\u0438\u0440\u043e\u0432\u043a\u0430 \u0442\u043e\u0439 \u0436\u0435 \u0441\u0438\u0442\u0443\u0430\u0446\u0438\u0438",
+  "rationale": "1-2 \u043f\u0440\u0435\u0434\u043b\u043e\u0436\u0435\u043d\u0438\u044f: \u043f\u043e\u0447\u0435\u043c\u0443 \u044d\u0442\u0430 \u043c\u044b\u0441\u043b\u044c \u0431\u043e\u043b\u0435\u0435 \u0442\u043e\u0447\u043d\u0430\u044f",
+  "questions": ["\u0441\u043e\u043a\u0440\u0430\u0442\u043e\u0432\u0441\u043a\u0438\u0439 \u0432\u043e\u043f\u0440\u043e\u0441 1", "\u0441\u043e\u043a\u0440\u0430\u0442\u043e\u0432\u0441\u043a\u0438\u0439 \u0432\u043e\u043f\u0440\u043e\u0441 2", "\u0441\u043e\u043a\u0440\u0430\u0442\u043e\u0432\u0441\u043a\u0438\u0439 \u0432\u043e\u043f\u0440\u043e\u0441 3"]
+}}"""
+
+    async with httpx.AsyncClient(timeout=20) as client:
+        resp = await client.post(
+            OPENROUTER_URL,
+            json={
+                "model": settings.openrouter_model,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.6,
+                "max_tokens": 400,
+            },
+            headers=_auth_headers(),
+        )
+        resp.raise_for_status()
+
+    raw = resp.json()["choices"][0]["message"]["content"]
+    if "```" in raw:
+        raw = raw.split("```")[1].removeprefix("json").strip()
+
+    data = json.loads(raw)
+    return ReframeResponse(
+        alternative_thought=data["alternative_thought"],
+        rationale=data["rationale"],
+        questions=data.get("questions", []),
+    )
