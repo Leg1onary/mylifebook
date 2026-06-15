@@ -30,8 +30,12 @@ const JournalPage         = lazy_(() => import('@/pages/journal/JournalPage'))
 const ProfilePage         = lazy_(() => import('@/pages/profile/PersonalContextPage'))
 const SettingsPage        = lazy_(() => import('@/pages/settings/SettingsPage'))
 const NotFoundPage        = lazy_(() => import('@/pages/system/NotFoundPage'))
+const OfflinePage         = lazy_(() => import('@/pages/system/OfflinePage'))
 
 export const router = createBrowserRouter([
+  // Offline — accessible without auth
+  { path: '/offline', element: <OfflinePage /> },
+
   // Auth routes (guest only)
   {
     element: <GuestGuard />,

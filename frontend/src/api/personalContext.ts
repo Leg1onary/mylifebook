@@ -1,18 +1,13 @@
-import { apiClient } from './client';
-import type { PersonalContext } from '@/types';
+import { api } from './client'
+import type { PersonalContext } from '@/types'
 
 export const personalContextApi = {
-  get: async (): Promise<PersonalContext> => {
-    const { data } = await apiClient.get('/context');
-    return data;
-  },
+  get: () =>
+    api.get<PersonalContext>('/context'),
 
-  update: async (payload: Partial<PersonalContext>): Promise<PersonalContext> => {
-    const { data } = await apiClient.patch('/context', payload);
-    return data;
-  },
+  update: (payload: Partial<PersonalContext>) =>
+    api.patch<PersonalContext>('/context', payload),
 
-  extractRaw: async (rawText: string): Promise<void> => {
-    await apiClient.post('/context/raw', { raw_text: rawText });
-  },
-};
+  extractRaw: (rawText: string) =>
+    api.post<void>('/context/raw', { raw_text: rawText }),
+}
