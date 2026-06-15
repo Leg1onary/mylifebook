@@ -2,16 +2,16 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { personalContextApi } from '@/api/personalContext';
-import { aiApi } from '@/api/ai';
 import { PersonalContextHint } from '@/components/ai/PersonalContextHint';
 import type { PersonalContextUpdate } from '@/types';
 
 type FormValues = {
-  core_beliefs: string;
-  grounding_phrases: string;
-  important_relationships: string;
-  triggers_summary: string;
-  therapy_goals: string;
+  old_laws: string;
+  triggers: string;
+  typical_distortions: string;
+  growth_goals: string;
+  communication_prefs: string;
+  context_notes: string;
 };
 
 export default function PersonalContextPage() {
@@ -26,47 +26,51 @@ export default function PersonalContextPage() {
     queryFn: () => personalContextApi.get().then(r => r.data),
   });
 
-  const { register, handleSubmit, formState: { isDirty } } = useForm<FormValues>({
-    values: {
-      core_beliefs: context?.core_beliefs?.join('\n') ?? '',
-      grounding_phrases: context?.grounding_phrases?.join('\n') ?? '',
-      important_relationships: context?.important_relationships
-        ? JSON.stringify(context.important_relationships, null, 2)
-        : '',
-      triggers_summary: context?.triggers_summary ?? '',
-      therapy_goals: context?.therapy_goals ?? '',
+  const { register, handleSubmit, reset, formState: { isDirty } } = useForm<FormValues>({
+    defaultValues: {
+      old_laws: '',
+      triggers: '',
+      typical_distortions: '',
+      growth_goals: '',
+      communication_prefs: '',
+      context_notes: '',
     },
   });
 
+  React.useEffect(() => {
+    if (!context) return;
+    reset({
+      old_laws:            context.old_laws?.join('\n')            ?? '',
+      triggers:            context.triggers?.join('\n')            ?? '',
+      typical_distortions: context.typical_distortions?.join('\n') ?? '',
+      growth_goals:        context.growth_goals?.join('\n')        ?? '',
+      communication_prefs: context.communication_prefs            ?? '',
+      context_notes:       context.context_notes                  ?? '',
+    });
+  }, [context, reset]);
+
   const saveMutation = useMutation({
     mutationFn: (data: FormValues) => {
-      let relationships: PersonalContextUpdate['important_relationships'] = [];
-      try {
-        relationships = data.important_relationships
-          ? JSON.parse(data.important_relationships)
-          : [];
-      } catch {
-        relationships = [];
-      }
       const payload: PersonalContextUpdate = {
-        core_beliefs: data.core_beliefs.split('\n').filter(Boolean),
-        grounding_phrases: data.grounding_phrases.split('\n').filter(Boolean),
-        important_relationships: relationships,
-        triggers_summary: data.triggers_summary,
-        therapy_goals: data.therapy_goals,
+        old_laws:            data.old_laws.split('\n').filter(Boolean),
+        triggers:            data.triggers.split('\n').filter(Boolean),
+        typical_distortions: data.typical_distortions.split('\n').filter(Boolean),
+        growth_goals:        data.growth_goals.split('\n').filter(Boolean),
+        communication_prefs: data.communication_prefs || undefined,
+        context_notes:       data.context_notes || undefined,
       };
       return personalContextApi.update(payload);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['personal-context'] }),
   });
 
-  // Используем aiApi.extractProfile (POST /ai/extract-profile), а не /context/raw
   const handleExtract = async () => {
     if (!rawText.trim()) return;
     setLoadingExtract(true);
     setExtractError(false);
     try {
-      await aiApi.extractProfile(rawText);
+      // POST /personal-context/extract — { raw_text, merge: false }
+      await personalContextApi.extract(rawText, false);
       await queryClient.invalidateQueries({ queryKey: ['personal-context'] });
       setRawText('');
       setExtractSuccess(true);
@@ -88,7 +92,7 @@ export default function PersonalContextPage() {
 
       <PersonalContextHint />
 
-      {/* AI extraction — POST /ai/extract-profile */}
+      {/* POST /personal-context/extract */}
       <div className="card">
         <h3>🤖 Извлечь из текста</h3>
         <p className="text-muted text-sm">
@@ -113,51 +117,47 @@ export default function PersonalContextPage() {
         {extractError && <p className="error-text mt-1">Не удалось извлечь. Попробуй ещё раз.</p>}
       </div>
 
-      {/* Manual edit form */}
       <form onSubmit={handleSubmit(d => saveMutation.mutate(d))} className="context-form">
         <div className="form-field">
-          <label>Ключевые убеждения</label>
+          <label>Старые законы</label>
+          <p className="field-hint text-xs text-muted">Каждый с новой строки</p>
+          <textarea {...register('old_laws')} rows={4}
+            placeholder="Моя ценность = моя польза...\nЕсли я слабый — меня бросят..." />
+        </div>
+
+        <div className="form-field">
+          <label>Типичные триггеры</label>
+          <p className="field-hint text-xs text-muted">Каждый с новой строки</p>
+          <textarea {...register('triggers')} rows={3}
+            placeholder="Долгое молчание в переписке...\nОтказ в просьбе..." />
+        </div>
+
+        <div className="form-field">
+          <label>Типичные искажения</label>
           <p className="field-hint text-xs text-muted">Каждое с новой строки</p>
-          <textarea
-            {...register('core_beliefs')}
-            rows={4}
-            placeholder="Я должен быть лучшим...\nЕсли я ошибусь, меня осудят..."
-          />
+          <textarea {...register('typical_distortions')} rows={3}
+            placeholder="Чтение мыслей...\nКатастрофизация..." />
         </div>
 
         <div className="form-field">
-          <label>Заземляющие фразы</label>
-          <p className="field-hint text-xs text-muted">До 5 фраз, каждая с новой строки. Используются в SOS-режиме.</p>
-          <textarea
-            {...register('grounding_phrases')}
-            rows={3}
-            placeholder="Я в безопасности\nЭто временно\nЯ справлялся с этим раньше"
-          />
+          <label>Цели роста</label>
+          <p className="field-hint text-xs text-muted">Каждая с новой строки. Используются в SOS и AI-подсказках.</p>
+          <textarea {...register('growth_goals')} rows={3}
+            placeholder="Разорвать связь ценности и полезности...\nНаучиться просить помощи..." />
         </div>
 
         <div className="form-field">
-          <label>Важные отношения</label>
-          <p className="field-hint text-xs text-muted">JSON-массив: [{"name": "Мама", "role": "важна"}]</p>
-          <textarea
-            {...register('important_relationships')}
-            rows={3}
-            placeholder='[{"name": "Мама", "role": "важна"}]'
-          />
+          <label>Предпочтения общения</label>
+          <textarea {...register('communication_prefs')} rows={2}
+            placeholder="Предпочитаю прямую обратную связь без смягчений..." />
         </div>
 
         <div className="form-field">
-          <label>Общее о триггерах</label>
-          <textarea {...register('triggers_summary')} rows={3} />
+          <label>Заметки</label>
+          <textarea {...register('context_notes')} rows={3} />
         </div>
 
-        <div className="form-field">
-          <label>Цели терапии</label>
-          <textarea {...register('therapy_goals')} rows={3} />
-        </div>
-
-        {saveMutation.isError && (
-          <p className="error-text">Не удалось сохранить. Попробуй ещё раз.</p>
-        )}
+        {saveMutation.isError && <p className="error-text">Не удалось сохранить. Попробуй ещё раз.</p>}
 
         <button
           type="submit"

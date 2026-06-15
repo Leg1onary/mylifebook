@@ -14,107 +14,102 @@ export interface TokenResponse {
   token_type: string;
 }
 
-// Daily Check-in
+// Daily Check-in — matches POST /daily-checkins schema
 export interface DailyCheckin {
   id: number;
-  user_id: number;
   date: string;
-  mood_score: number;
-  energy_score: number;
-  anxiety_score?: number;
-  shame_score?: number;
-  loneliness_score?: number;
-  anger_score?: number;
-  summary_text?: string;
-  pain_text?: string;
-  support_text?: string;
-  need_text?: string;
-  trigger_happened: boolean;
+  mood: number;
+  energy: number;
+  anxiety?: number;
+  shame?: number;
+  loneliness?: number;
+  anger?: number;
+  emotion_tags?: string[];
+  note_main?: string;
+  note_pain?: string;
+  note_support?: string;
+  note_need?: string;
+  had_trigger: boolean;
   created_at: string;
   updated_at: string;
 }
 
 export interface DailyCheckinCreate {
   date: string;
-  mood_score: number;
-  energy_score: number;
-  anxiety_score?: number;
-  shame_score?: number;
-  loneliness_score?: number;
-  anger_score?: number;
-  summary_text?: string;
-  pain_text?: string;
-  support_text?: string;
-  need_text?: string;
-  trigger_happened?: boolean;
+  mood: number;
+  energy: number;
+  anxiety?: number;
+  shame?: number;
+  loneliness?: number;
+  anger?: number;
+  emotion_tags?: string[];
+  note_main?: string;
+  note_pain?: string;
+  note_support?: string;
+  note_need?: string;
+  had_trigger?: boolean;
 }
 
-// Trigger Event
+// Trigger Event — matches GET /triggers schema
 export interface TriggerEvent {
   id: number;
-  user_id: number;
-  happened_at: string;
-  situation_text: string;
-  first_thought_text?: string;
-  body_reaction_text?: string;
-  action_urge_text?: string;
-  old_law_text?: string;
-  intensity_score?: number;
-  category_id?: number;
-  linked_thought_record_id?: number;
   created_at: string;
-  updated_at: string;
+  situation: string;
+  auto_thought?: string;
+  emotion_tags?: string[];
+  emotion_intensity?: number;
+  body_response?: string;
+  impulse?: string;
+  old_law?: string;
+  category?: string;
+  linked_thought_record_id?: number;
 }
 
-export interface TriggerCreate {
-  situation_text: string;
-  first_thought_text?: string;
-  body_reaction_text?: string;
-  action_urge_text?: string;
-  old_law_text?: string;
-  intensity_score?: number;
-  happened_at?: string;
+export interface TriggerEventCreate {
+  situation: string;
+  auto_thought?: string;
+  emotion_tags?: string[];
+  emotion_intensity?: number;
+  body_response?: string;
+  impulse?: string;
+  old_law?: string;
+  category?: string;
 }
 
-// AI Reframe — JSONB field added in migration 003
+// AI Reframe JSONB — populated by POST /ai/reframe
 export interface AIReframe {
-  alternative_thought: string;
-  rationale?: string;
-  socratic_questions?: string[];
-  generated_at?: string;
+  reframe: string;
+  saved?: boolean;
+  crisis?: boolean;
+  detail?: string;
+  resources?: {
+    hotline?: string;
+    text?: string;
+  };
 }
 
-// Thought Record
+// Thought Record — matches GET /thought-records schema
 export interface ThoughtRecord {
   id: number;
-  user_id: number;
-  trigger_event_id?: number;
-  happened_at?: string;
-  situation_text?: string;
-  automatic_thought_text?: string;
-  meaning_text?: string;
-  fear_text?: string;
-  old_law_text?: string;
-  body_reaction_text?: string;
-  action_taken_text?: string;
-  evidence_for_text?: string;
-  evidence_against_text?: string;
-  ignored_facts_text?: string;
-  balanced_thought_text?: string;
-  new_action_text?: string;
-  follow_up_text?: string;
-  emotion_before_score?: number;
-  emotion_after_score?: number;
-  distortions?: string[];
-  /** JSONB — populated by POST /ai/reframe/{id} */
-  ai_reframe?: AIReframe | null;
-  is_draft: boolean;
   created_at: string;
   updated_at: string;
-}
-
-export interface ThoughtRecordCreate {
-  trigger_event_id?: number;
+  status: 'draft' | 'complete';
+  situation?: string;
+  auto_thought?: string;
+  meaning?: string;
+  emotions?: Array<{ tag: string; intensity: number }>;
+  body_response?: string;
+  old_law?: string;
+  evidence_for?: string;
+  evidence_against?: string;
+  distortions?: string[];
+  new_perspective?: string;
+  new_action?: string;
+  ai_reframe?: string | null;
+  followup_text?: string;
+  followup_emotion_after?: Array<{ tag: string; intensity: number }>;
+  linked_trigger_id?: number;
+  // wizard-local fields (kept for draft saving compat)
   situation_text?: string;
   automatic_thought_text?: string;
   meaning_text?: string;
@@ -129,77 +124,109 @@ export interface ThoughtRecordCreate {
   new_action_text?: string;
   emotion_before_score?: number;
   emotion_after_score?: number;
-  distortions?: string[];
+  trigger_event_id?: number;
   is_draft?: boolean;
 }
 
-// Experiment
+export interface ThoughtRecordCreate {
+  status?: 'draft' | 'complete';
+  situation?: string;
+  auto_thought?: string;
+  linked_trigger_id?: number;
+  // full set optional for wizard step-by-step saves
+  meaning?: string;
+  body_response?: string;
+  old_law?: string;
+  evidence_for?: string;
+  evidence_against?: string;
+  distortions?: string[];
+  new_perspective?: string;
+  new_action?: string;
+  emotions?: Array<{ tag: string; intensity: number }>;
+}
+
+// Experiment — matches GET /experiments schema
 export interface Experiment {
   id: number;
-  user_id: number;
-  thought_record_id?: number;
-  old_law_text: string;
-  fear_text: string;
-  experiment_action_text: string;
-  prediction_text: string;
-  fear_before_score: number;
-  scheduled_for?: string;
-  completed_at?: string;
-  actual_result_text?: string;
-  came_true_text?: string;
-  did_not_come_true_text?: string;
-  learning_text?: string;
-  fear_after_score?: number;
-  status: 'planned' | 'in_progress' | 'completed' | 'cancelled';
   created_at: string;
   updated_at: string;
+  status: 'planned' | 'active' | 'complete';
+  old_law: string;
+  fear_description: string;
+  action_plan: string;
+  forecast: string;
+  fear_before: number;
+  planned_date?: string;
+  result?: string;
+  what_worked?: string;
+  what_didnt?: string;
+  conclusion?: string;
+  fear_after?: number;
+  linked_thought_record_id?: number;
 }
 
 export interface ExperimentCreate {
-  old_law_text: string;
-  fear_text: string;
-  experiment_action_text: string;
-  prediction_text: string;
-  fear_before_score: number;
-  scheduled_for?: string;
-  thought_record_id?: number;
+  old_law: string;
+  fear_description: string;
+  action_plan: string;
+  forecast: string;
+  fear_before: number;
+  planned_date?: string;
+  linked_thought_record_id?: number;
 }
 
 export interface ExperimentUpdate {
-  actual_result_text?: string;
-  came_true_text?: string;
-  did_not_come_true_text?: string;
-  learning_text?: string;
-  fear_after_score?: number;
-  status?: string;
+  status?: 'planned' | 'active' | 'complete';
+  result?: string;
+  what_worked?: string;
+  what_didnt?: string;
+  conclusion?: string;
+  fear_after?: number;
 }
 
-// Weekly Review
+// Weekly Review — matches GET /weekly-reviews schema
 export interface WeeklyReview {
   id: number;
-  user_id: number;
   week_start: string;
   week_end: string;
-  summary_text?: string;
-  pattern_text?: string;
-  learning_text?: string;
-  next_focus_text?: string;
-  ai_summary_text?: string;
+  checkins_count?: number;
+  triggers_count?: number;
+  tr_count?: number;
+  experiments_count?: number;
+  avg_mood?: number;
+  avg_anxiety?: number;
+  avg_shame?: number;
+  avg_loneliness?: number;
+  top_old_laws?: Array<{ law: string; count: number }>;
+  top_trigger_categories?: Array<{ category: string; count: number }>;
+  ai_summary?: string;
+  guided_q1?: string;
+  guided_q2?: string;
+  guided_q3?: string;
+  guided_q4?: string;
+  guided_q5?: string;
+  guided_q6?: string;
+  conclusion?: string;
+  next_week_focus?: string;
   created_at: string;
   updated_at: string;
 }
 
 export interface WeeklyReviewUpdate {
-  summary_text?: string;
-  pattern_text?: string;
-  learning_text?: string;
-  next_focus_text?: string;
+  week_start?: string;
+  guided_q1?: string;
+  guided_q2?: string;
+  guided_q3?: string;
+  guided_q4?: string;
+  guided_q5?: string;
+  guided_q6?: string;
+  conclusion?: string;
+  next_week_focus?: string;
 }
 
 // Journal
 export interface JournalEntry {
   id: number;
-  user_id: number;
   entry_date: string;
   title?: string;
   body: string;
@@ -215,34 +242,42 @@ export interface JournalEntryCreate {
   entry_date?: string;
 }
 
-// Personal Context
+// Personal Context — matches GET /personal-context schema
 export interface PersonalContext {
   id: number;
-  user_id: number;
-  core_beliefs?: string[];
-  grounding_phrases?: string[];
-  important_relationships?: { name: string; role: string }[];
-  triggers_summary?: string;
-  therapy_goals?: string;
-  created_at: string;
+  triggers?: string[];
+  old_laws?: string[];
+  typical_distortions?: string[];
+  communication_prefs?: string;
+  growth_goals?: string[];
+  context_notes?: string;
   updated_at: string;
 }
 
-export type PersonalContextUpdate = Omit<PersonalContext, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+export type PersonalContextUpdate = Omit<PersonalContext, 'id' | 'updated_at'>;
 
-// Settings
-export interface UserSettings {
-  timezone: string;
-  theme: string;
-  ai_enabled: boolean;
-  reminder_morning_enabled: boolean;
-  reminder_evening_enabled: boolean;
-  reminder_morning_time: string;
-  reminder_evening_time: string;
-  push_token?: string;
+// Settings — matches GET /settings schema
+export interface ReminderConfig {
+  enabled: boolean;
+  time?: string;
+  weekday?: string;
 }
 
-// Today snapshot — matches backend GET /today response
+export interface UserSettings {
+  theme: 'light' | 'dark' | 'system';
+  ai_enabled: boolean;
+  openrouter_model?: string;
+  reminders: {
+    morning: ReminderConfig;
+    evening: ReminderConfig;
+    weekly: ReminderConfig & { weekday?: string };
+    experiment_followup: { enabled: boolean };
+  };
+}
+
+export type UserSettingsUpdate = Partial<UserSettings>;
+
+// Today snapshot — matches GET /today response
 export interface TodaySnapshot {
   date: string;
   streak_days: number;
@@ -254,5 +289,5 @@ export interface TodaySnapshot {
   unfinished_thought_records_count: number;
 }
 
-/** @deprecated Use TodaySnapshot. Kept for backward-compat. */
+/** @deprecated Use TodaySnapshot */
 export type TodayData = TodaySnapshot;

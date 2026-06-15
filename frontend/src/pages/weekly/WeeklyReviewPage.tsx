@@ -1,12 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { weeklyApi } from '@/api/weekly';
 import { aiApi } from '@/api/ai';
 import { formatDate, getCurrentWeekStart } from '@/lib/dates';
 import { AIWeeklySummaryCard } from '@/components/ai/AIWeeklySummaryCard';
+import type { WeeklyReviewUpdate } from '@/types';
 
-// ТЗ п.19: ровно 6 guided review questions
+type ReviewFormFields = Required<Pick<WeeklyReviewUpdate,
+  'guided_q1' | 'guided_q2' | 'guided_q3' | 'guided_q4' | 'guided_q5' | 'guided_q6' |
+  'conclusion' | 'next_week_focus'
+>>;
+
 const GUIDED_QUESTIONS = [
   'Где неделя ударила сильнее всего?',
   'Какой старый закон включался чаще всего?',
@@ -14,14 +19,12 @@ const GUIDED_QUESTIONS = [
   'Где получилось не подчиниться?',
   'Что оказалось не таким страшным, как ожидалось?',
   'Что стоит проверить на следующей неделе?',
-];
+] as const;
 
-type ReviewForm = {
-  summary_text: string;
-  pattern_text: string;
-  learning_text: string;
-  next_focus_text: string;
-};
+const GUIDED_KEYS = [
+  'guided_q1', 'guided_q2', 'guided_q3',
+  'guided_q4', 'guided_q5', 'guided_q6',
+] as const;
 
 export default function WeeklyReviewPage() {
   const queryClient = useQueryClient();
@@ -34,27 +37,39 @@ export default function WeeklyReviewPage() {
     queryFn: () => weeklyApi.getByWeekStart(weekStart).then(r => r.data),
   });
 
-  const { register, handleSubmit, formState: { isDirty } } = useForm<ReviewForm>({
-    values: {
-      summary_text: review?.summary_text ?? '',
-      pattern_text: review?.pattern_text ?? '',
-      learning_text: review?.learning_text ?? '',
-      next_focus_text: review?.next_focus_text ?? '',
+  const { register, handleSubmit, reset, formState: { isDirty } } = useForm<ReviewFormFields>({
+    defaultValues: {
+      guided_q1: '', guided_q2: '', guided_q3: '',
+      guided_q4: '', guided_q5: '', guided_q6: '',
+      conclusion: '', next_week_focus: '',
     },
   });
 
+  useEffect(() => {
+    if (!review) return;
+    reset({
+      guided_q1:      review.guided_q1      ?? '',
+      guided_q2:      review.guided_q2      ?? '',
+      guided_q3:      review.guided_q3      ?? '',
+      guided_q4:      review.guided_q4      ?? '',
+      guided_q5:      review.guided_q5      ?? '',
+      guided_q6:      review.guided_q6      ?? '',
+      conclusion:     review.conclusion     ?? '',
+      next_week_focus: review.next_week_focus ?? '',
+    });
+  }, [review, reset]);
+
   const saveMutation = useMutation({
-    mutationFn: (data: ReviewForm) => weeklyApi.update(weekStart, data).then(r => r.data),
+    mutationFn: (fields: ReviewFormFields) =>
+      weeklyApi.update(weekStart, { week_start: weekStart, ...fields }).then(r => r.data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['weekly', weekStart] }),
   });
 
   const handleAiSummary = async () => {
-    if (!review?.id) return;
     setLoadingAi(true);
     setAiError(false);
     try {
-      // Исправлено: weeklyInsights → weeklySummary
-      await aiApi.weeklySummary(review.id);
+      await aiApi.weeklySummary(weekStart);
       queryClient.invalidateQueries({ queryKey: ['weekly', weekStart] });
     } catch {
       setAiError(true);
@@ -72,13 +87,11 @@ export default function WeeklyReviewPage() {
         <time className="page-subtitle">{formatDate(weekStart)}</time>
       </div>
 
-      {/* AI summary — если есть */}
-      {review?.ai_summary_text && (
-        <AIWeeklySummaryCard summary={review.ai_summary_text} />
+      {review?.ai_summary && (
+        <AIWeeklySummaryCard summary={review.ai_summary} />
       )}
 
-      {/* Кнопка генерации */}
-      {!review?.ai_summary_text && (
+      {!review?.ai_summary && (
         <div className="ai-trigger-wrap">
           <button
             className="btn btn-ghost btn-sm ai-trigger"
@@ -93,37 +106,25 @@ export default function WeeklyReviewPage() {
         </div>
       )}
 
-      {/* Направляющие вопросы — 6 штук по ТЗ п.19 */}
-      <div className="guided-questions-block">
-        <h3>Направляющие вопросы</h3>
-        <ol className="guided-questions-list">
-          {GUIDED_QUESTIONS.map((q, i) => (
-            <li key={i} className="guided-question">
-              <p className="question-text">{q}</p>
-            </li>
-          ))}
-        </ol>
-      </div>
-
       <form onSubmit={handleSubmit(d => saveMutation.mutate(d))} className="weekly-form">
-        <div className="form-field">
-          <label>Итоги недели</label>
-          <textarea {...register('summary_text')} rows={4} placeholder="Кратко о неделе..." />
+        <div className="guided-questions-block">
+          <h3>Направляющие вопросы</h3>
+          {GUIDED_KEYS.map((key, i) => (
+            <div key={key} className="form-field">
+              <label>{GUIDED_QUESTIONS[i]}</label>
+              <textarea {...register(key)} rows={3} />
+            </div>
+          ))}
         </div>
 
         <div className="form-field">
-          <label>Паттерны и закономерности</label>
-          <textarea {...register('pattern_text')} rows={3} />
-        </div>
-
-        <div className="form-field">
-          <label>Главный вывод</label>
-          <textarea {...register('learning_text')} rows={3} />
+          <label>Вывод недели</label>
+          <textarea {...register('conclusion')} rows={3} />
         </div>
 
         <div className="form-field">
           <label>Фокус на следующей неделе</label>
-          <textarea {...register('next_focus_text')} rows={2} />
+          <textarea {...register('next_week_focus')} rows={2} />
         </div>
 
         <button

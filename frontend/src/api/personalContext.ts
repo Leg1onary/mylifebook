@@ -2,16 +2,15 @@ import { api } from './client';
 import type { PersonalContext, PersonalContextUpdate } from '@/types';
 
 export const personalContextApi = {
+  /** GET /personal-context */
   get: () =>
-    api.get<PersonalContext>('/context'),
+    api.get<PersonalContext>('/personal-context'),
 
+  /** PUT /personal-context — partial update */
   update: (payload: PersonalContextUpdate) =>
-    api.patch<PersonalContext>('/context', payload),
+    api.put<PersonalContext>('/personal-context', payload),
 
-  /**
-   * @deprecated Используй aiApi.extractProfile вместо этого.
-   * Оставлен для backward-compat на случай если где-то ещё вызывается.
-   */
-  extractRaw: (rawText: string) =>
-    api.post<void>('/context/raw', { raw_text: rawText }),
+  /** POST /personal-context/extract */
+  extract: (rawText: string, merge = false) =>
+    api.post<PersonalContext>('/personal-context/extract', { raw_text: rawText, merge }),
 };

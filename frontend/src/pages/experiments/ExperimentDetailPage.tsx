@@ -9,11 +9,11 @@ import { formatDate } from '@/lib/dates';
 import { Page } from '@/components/layout/Page';
 
 const followUpSchema = z.object({
-  actual_result_text: z.string().min(2, 'Опиши что произошло'),
-  came_true_text: z.string().optional(),
-  did_not_come_true_text: z.string().optional(),
-  learning_text: z.string().min(2, 'Напиши вывод'),
-  fear_after_score: z.number().min(1).max(10),
+  result:     z.string().min(2, 'Опиши что произошло'),
+  what_worked: z.string().optional(),
+  what_didnt:  z.string().optional(),
+  conclusion:  z.string().min(2, 'Напиши вывод'),
+  fear_after:  z.number().min(1).max(10),
 });
 
 type FollowUpForm = z.infer<typeof followUpSchema>;
@@ -32,13 +32,13 @@ export default function ExperimentDetailPage() {
 
   const { register, handleSubmit, formState: { errors } } = useForm<FollowUpForm>({
     resolver: zodResolver(followUpSchema),
-    defaultValues: { fear_after_score: 4 },
+    defaultValues: { fear_after: 4 },
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: FollowUpForm) => experimentsApi.update(Number(id), {
+    mutationFn: (data: FollowUpForm) => experimentsApi.update(Number(id!), {
       ...data,
-      status: 'completed',
+      status: 'complete',
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['experiment', id] });
@@ -48,7 +48,7 @@ export default function ExperimentDetailPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => experimentsApi.delete(Number(id)),
+    mutationFn: () => experimentsApi.delete(Number(id!)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['experiments'] });
       navigate('/experiments');
@@ -56,9 +56,7 @@ export default function ExperimentDetailPage() {
   });
 
   if (isLoading) return (
-    <Page>
-      <div className="page-loading"><div className="spinner" /></div>
-    </Page>
+    <Page><div className="page-loading"><div className="spinner" /></div></Page>
   );
 
   if (error || !exp) return (
@@ -70,7 +68,7 @@ export default function ExperimentDetailPage() {
     </Page>
   );
 
-  const isCompleted = exp.status === 'completed';
+  const isCompleted = exp.status === 'complete';
 
   return (
     <Page>
@@ -89,111 +87,58 @@ export default function ExperimentDetailPage() {
       </div>
 
       <div className="detail-fields">
-        <div className="detail-field">
-          <span className="detail-field-label">Убеждение</span>
-          <p className="detail-field-value">{exp.old_law_text}</p>
-        </div>
-        <div className="detail-field">
-          <span className="detail-field-label">Страх</span>
-          <p className="detail-field-value">{exp.fear_text}</p>
-        </div>
-        <div className="detail-field">
-          <span className="detail-field-label">Действие</span>
-          <p className="detail-field-value">{exp.experiment_action_text}</p>
-        </div>
-        <div className="detail-field">
-          <span className="detail-field-label">Предсказание</span>
-          <p className="detail-field-value">{exp.prediction_text}</p>
-        </div>
-        {exp.scheduled_for && (
-          <div className="detail-field">
-            <span className="detail-field-label">Запланировано на</span>
-            <p className="detail-field-value">{formatDate(exp.scheduled_for)}</p>
-          </div>
+        <div className="detail-field"><span className="detail-field-label">Старый закон</span><p className="detail-field-value">{exp.old_law}</p></div>
+        <div className="detail-field"><span className="detail-field-label">Страх</span><p className="detail-field-value">{exp.fear_description}</p></div>
+        <div className="detail-field"><span className="detail-field-label">Действие</span><p className="detail-field-value">{exp.action_plan}</p></div>
+        <div className="detail-field"><span className="detail-field-label">Прогноз</span><p className="detail-field-value">{exp.forecast}</p></div>
+        {exp.planned_date && (
+          <div className="detail-field"><span className="detail-field-label">Запланировано на</span><p className="detail-field-value">{formatDate(exp.planned_date)}</p></div>
         )}
-        <div className="detail-field">
-          <span className="detail-field-label">Страх ДО</span>
-          <p className="detail-field-value">{exp.fear_before_score}/10</p>
-        </div>
+        <div className="detail-field"><span className="detail-field-label">Страх до</span><p className="detail-field-value">{exp.fear_before}/10</p></div>
       </div>
 
-      {/* Результат если завершён */}
       {isCompleted && (
         <div className="detail-section">
           <h3>Результат</h3>
           <div className="detail-fields">
-            <div className="detail-field">
-              <span className="detail-field-label">Что произошло</span>
-              <p className="detail-field-value">{exp.actual_result_text}</p>
-            </div>
-            {exp.came_true_text && (
-              <div className="detail-field">
-                <span className="detail-field-label">Что сбылось</span>
-                <p className="detail-field-value">{exp.came_true_text}</p>
-              </div>
-            )}
-            {exp.did_not_come_true_text && (
-              <div className="detail-field">
-                <span className="detail-field-label">Что не сбылось</span>
-                <p className="detail-field-value">{exp.did_not_come_true_text}</p>
-              </div>
-            )}
-            <div className="detail-field">
-              <span className="detail-field-label">Вывод</span>
-              <p className="detail-field-value">{exp.learning_text}</p>
-            </div>
-            <div className="detail-field">
-              <span className="detail-field-label">Страх ПОСЛЕ</span>
-              <p className="detail-field-value">{exp.fear_after_score}/10</p>
-            </div>
+            <div className="detail-field"><span className="detail-field-label">Что произошло</span><p className="detail-field-value">{exp.result}</p></div>
+            {exp.what_worked && <div className="detail-field"><span className="detail-field-label">Что сработало</span><p className="detail-field-value">{exp.what_worked}</p></div>}
+            {exp.what_didnt && <div className="detail-field"><span className="detail-field-label">Что не сбылось</span><p className="detail-field-value">{exp.what_didnt}</p></div>}
+            <div className="detail-field"><span className="detail-field-label">Вывод</span><p className="detail-field-value">{exp.conclusion}</p></div>
+            <div className="detail-field"><span className="detail-field-label">Страх после</span><p className="detail-field-value">{exp.fear_after}/10</p></div>
           </div>
         </div>
       )}
 
-      {/* Follow-up форма */}
       {!isCompleted && (
         <div className="detail-actions">
           {!showFollowUp ? (
-            <button className="btn btn-primary" onClick={() => setShowFollowUp(true)}>
-              ✅ Завершить эксперимент
-            </button>
+            <button className="btn btn-primary" onClick={() => setShowFollowUp(true)}>✅ Завершить эксперимент</button>
           ) : (
-            <form
-              className="card form-card"
-              onSubmit={handleSubmit(d => updateMutation.mutate(d))}
-            >
+            <form className="card form-card" onSubmit={handleSubmit(d => updateMutation.mutate(d))}>
               <h3>Что получилось?</h3>
-
               <div className="form-field">
                 <label>Что реально произошло?</label>
-                <textarea {...register('actual_result_text')} rows={3} />
-                {errors.actual_result_text && <span className="error-text">{errors.actual_result_text.message}</span>}
+                <textarea {...register('result')} rows={3} />
+                {errors.result && <span className="error-text">{errors.result.message}</span>}
               </div>
-
               <div className="form-field">
-                <label>Что из предсказания сбылось?</label>
-                <textarea {...register('came_true_text')} rows={2} />
+                <label>Что сработало?</label>
+                <textarea {...register('what_worked')} rows={2} />
               </div>
-
               <div className="form-field">
-                <label>Что НЕ сбылось?</label>
-                <textarea {...register('did_not_come_true_text')} rows={2} />
+                <label>Что не сбылось?</label>
+                <textarea {...register('what_didnt')} rows={2} />
               </div>
-
               <div className="form-field">
                 <label>Главный вывод</label>
-                <textarea {...register('learning_text')} rows={2} />
-                {errors.learning_text && <span className="error-text">{errors.learning_text.message}</span>}
+                <textarea {...register('conclusion')} rows={2} />
+                {errors.conclusion && <span className="error-text">{errors.conclusion.message}</span>}
               </div>
-
               <div className="form-field">
-                <label>Страх ПОСЛЕ (1–10)</label>
-                <input
-                  type="range" min={1} max={10}
-                  {...register('fear_after_score', { valueAsNumber: true })}
-                />
+                <label>Страх после (1–10)</label>
+                <input type="range" min={1} max={10} {...register('fear_after', { valueAsNumber: true })} />
               </div>
-
               <div className="form-actions">
                 <button type="button" className="btn btn-ghost" onClick={() => setShowFollowUp(false)}>Отмена</button>
                 <button type="submit" className="btn btn-primary" disabled={updateMutation.isPending}>
@@ -205,8 +150,8 @@ export default function ExperimentDetailPage() {
         </div>
       )}
 
-      {exp.thought_record_id && (
-        <Link to={`/thought-records/${exp.thought_record_id}`} className="btn btn-ghost btn-sm">
+      {exp.linked_thought_record_id && (
+        <Link to={`/thought-records/${exp.linked_thought_record_id}`} className="btn btn-ghost btn-sm">
           Связанная запись мышления →
         </Link>
       )}
