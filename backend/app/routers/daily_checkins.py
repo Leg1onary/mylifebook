@@ -26,7 +26,10 @@ async def create_checkin(
         )
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(status_code=409, detail="Checkin for this date already exists")
+        raise HTTPException(
+            status_code=409,
+            detail=f"Check-in for {payload.entry_date} already exists. Use PATCH to update.",
+        )
 
     checkin = DailyCheckin(user_id=user.id, **payload.model_dump())
     db.add(checkin)
@@ -38,27 +41,32 @@ async def create_checkin(
 async def list_checkins(
     page: int = Query(1, ge=1),
     per_page: int = Query(30, ge=1, le=100),
+    # openapi-notes.md aliases: from / to / limit
+    from_: date | None = Query(None, alias="from"),
+    to: date | None = Query(None),
+    limit: int | None = Query(None, ge=1, le=365),
+    # also keep original names for backward compat
     date_from: date | None = None,
     date_to: date | None = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     q = select(DailyCheckin).where(DailyCheckin.user_id == user.id)
-    if date_from:
-        q = q.where(DailyCheckin.entry_date >= date_from)
-    if date_to:
-        q = q.where(DailyCheckin.entry_date <= date_to)
+    effective_from = from_ or date_from
+    effective_to = to or date_to
+    if effective_from:
+        q = q.where(DailyCheckin.entry_date >= effective_from)
+    if effective_to:
+        q = q.where(DailyCheckin.entry_date <= effective_to)
 
-    total_result = await db.execute(select(func.count()).select_from(q.subquery()))
-    total = total_result.scalar_one()
-
-    q = q.order_by(DailyCheckin.entry_date.desc()).offset((page - 1) * per_page).limit(per_page)
-    result = await db.execute(q)
-    items = result.scalars().all()
+    total = (await db.execute(select(func.count()).select_from(q.subquery()))).scalar_one()
+    effective_limit = limit or per_page
+    q = q.order_by(DailyCheckin.entry_date.desc()).offset((page - 1) * effective_limit).limit(effective_limit)
+    items = (await db.execute(q)).scalars().all()
 
     return PaginatedResponse(
-        items=items, total=total, page=page, per_page=per_page,
-        has_next=(page * per_page) < total,
+        items=items, total=total, page=page, per_page=effective_limit,
+        has_next=(page * effective_limit) < total,
     )
 
 
@@ -68,13 +76,29 @@ async def get_checkin_by_date(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
+    checkin = (await db.execute(
         select(DailyCheckin).where(
             DailyCheckin.user_id == user.id,
             DailyCheckin.entry_date == entry_date,
         )
-    )
-    checkin = result.scalar_one_or_none()
+    )).scalar_one_or_none()
+    if not checkin:
+        raise HTTPException(status_code=404, detail="Checkin not found")
+    return checkin
+
+
+@router.get("/{checkin_id}", response_model=DailyCheckinOut)
+async def get_checkin(
+    checkin_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    checkin = (await db.execute(
+        select(DailyCheckin).where(
+            DailyCheckin.id == checkin_id,
+            DailyCheckin.user_id == user.id,
+        )
+    )).scalar_one_or_none()
     if not checkin:
         raise HTTPException(status_code=404, detail="Checkin not found")
     return checkin
@@ -87,16 +111,29 @@ async def update_checkin(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(DailyCheckin).where(DailyCheckin.id == checkin_id, DailyCheckin.user_id == user.id)
-    )
-    checkin = result.scalar_one_or_none()
+    checkin = (await db.execute(
+        select(DailyCheckin).where(
+            DailyCheckin.id == checkin_id,
+            DailyCheckin.user_id == user.id,
+        )
+    )).scalar_one_or_none()
     if not checkin:
         raise HTTPException(status_code=404, detail="Checkin not found")
-
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(checkin, field, value)
     return checkin
+
+
+# PUT alias for openapi-notes.md compatibility
+@router.put("/{checkin_id}", response_model=DailyCheckinOut)
+async def replace_checkin(
+    checkin_id: int,
+    payload: DailyCheckinUpdate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """PUT alias — same behaviour as PATCH (partial update)."""
+    return await update_checkin(checkin_id, payload, db, user)
 
 
 @router.delete("/{checkin_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -105,10 +142,12 @@ async def delete_checkin(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(DailyCheckin).where(DailyCheckin.id == checkin_id, DailyCheckin.user_id == user.id)
-    )
-    checkin = result.scalar_one_or_none()
+    checkin = (await db.execute(
+        select(DailyCheckin).where(
+            DailyCheckin.id == checkin_id,
+            DailyCheckin.user_id == user.id,
+        )
+    )).scalar_one_or_none()
     if not checkin:
         raise HTTPException(status_code=404, detail="Checkin not found")
     await db.delete(checkin)
