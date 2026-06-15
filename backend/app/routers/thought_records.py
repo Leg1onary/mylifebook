@@ -17,6 +17,7 @@ async def create_thought(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    """Create a thought record. Defaults to is_draft=True so wizard can save partial state."""
     record = ThoughtRecord(
         user_id=user.id,
         **payload.model_dump(),
@@ -31,13 +32,19 @@ async def list_thoughts(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     is_sos: bool | None = None,
+    is_draft: bool | None = None,
     trigger_category: str | None = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    """List thought records. By default returns all (drafts + completed).
+    Pass is_draft=false to get only completed records for display.
+    """
     q = select(ThoughtRecord).where(ThoughtRecord.user_id == user.id)
     if is_sos is not None:
         q = q.where(ThoughtRecord.is_sos == is_sos)
+    if is_draft is not None:
+        q = q.where(ThoughtRecord.is_draft == is_draft)
     if trigger_category:
         q = q.where(ThoughtRecord.trigger_category == trigger_category)
 
@@ -71,6 +78,7 @@ async def update_thought(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    """Update a thought record. Setting is_draft=false marks it as completed."""
     result = await db.execute(
         select(ThoughtRecord).where(ThoughtRecord.id == record_id, ThoughtRecord.user_id == user.id)
     )
