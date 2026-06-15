@@ -1,18 +1,7 @@
 """AI weekly summary service.
 
-Flow:
-1. Load or create WeeklyReview for the given week_start.
-2. Load DailyCheckins for the week.
-3. Load PersonalContext.
-4. Build the weekly summary prompt.
-5. Call openrouter_client.complete().
-6. Parse JSON response.
-7. Persist ai_summary_text to WeeklyReview.
-8. Return parsed dict.
-
-Note: the legacy `openrouter.py` (generate_weekly_insights) remains in place
-for backward compatibility. This service is the canonical implementation going
-forward and adds full logging + PersonalContext awareness.
+Writes result to WeeklyReview.ai_insights (existing column).
+Also populates ai_patterns and ai_suggestions from the parsed response.
 """
 from __future__ import annotations
 
@@ -37,14 +26,13 @@ async def generate_summary(
     user_id: int,
     db: AsyncSession,
 ) -> dict:
-    """Generate and persist AI weekly summary.
+    """Generate and persist AI weekly summary for the given week_start.
 
-    Creates a WeeklyReview row if one does not already exist for the given
-    week_start. Returns the parsed AI response dict.
+    Creates a WeeklyReview row if one does not already exist.
+    Returns the parsed AI response dict.
     """
     week_end = week_start + timedelta(days=6)
 
-    # Load or create WeeklyReview
     result = await db.execute(
         select(WeeklyReview).where(
             WeeklyReview.user_id == user_id,
@@ -59,9 +47,8 @@ async def generate_summary(
             week_end=week_end,
         )
         db.add(review)
-        await db.flush()  # assigns PK without full commit
+        await db.flush()
 
-    # Load checkins for the week
     ci_result = await db.execute(
         select(DailyCheckin).where(
             DailyCheckin.user_id == user_id,
@@ -71,13 +58,11 @@ async def generate_summary(
     )
     checkins = list(ci_result.scalars().all())
 
-    # Load personal context
     ctx_result = await db.execute(
         select(PersonalContext).where(PersonalContext.user_id == user_id)
     )
     ctx = ctx_result.scalar_one_or_none()
 
-    # Build prompt and call AI
     messages = build_weekly_summary_prompt(review, checkins, ctx)
     completion = await complete(
         messages,
@@ -87,14 +72,15 @@ async def generate_summary(
         max_tokens=1000,
     )
 
-    # Parse JSON response
     raw = completion.text.strip()
     if raw.startswith("```"):
         raw = raw.split("```", 2)[1].removeprefix("json").strip()
     parsed: dict = json.loads(raw)
 
-    # Persist summary text to WeeklyReview
-    review.ai_summary_text = parsed.get("summary", "")
+    # Persist to existing WeeklyReview columns
+    review.ai_insights = parsed.get("summary", "")
+    review.ai_patterns = parsed.get("dominant_patterns", [])
+    review.ai_suggestions = parsed.get("questions_for_next_week", [])
     await db.commit()
     await db.refresh(review)
 
