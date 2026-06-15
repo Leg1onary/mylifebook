@@ -9,8 +9,8 @@ import { aiApi } from '@/api/ai';
 import { useDraft } from '@/hooks/useDraft';
 import { AIReframeCard } from '@/components/ai/AIReframeCard';
 import { COGNITIVE_DISTORTIONS } from '@/lib/constants';
-import type { ThoughtRecordCreate } from '@/types';
-import type { AIReframe } from '@/types';
+import type { ThoughtRecordCreate, AIReframe } from '@/types';
+import styles from './ThoughtRecordWizardPage.module.css';
 
 const STEPS = [
   { id: 1,  title: 'Ситуация',              field: 'situation_text',          hint: 'Что происходило? Где, когда, с кем?' },
@@ -43,7 +43,6 @@ export default function ThoughtRecordWizardPage() {
   const [distortions, setDistortions] = useState<string[]>([]);
   const [emotionBefore, setEmotionBefore] = useState(5);
   const [emotionAfter, setEmotionAfter] = useState(5);
-  // savedDraftId — id черновика, созданного при автосохранении на шагах кратных 3
   const [savedDraftId, setSavedDraftId] = useState<number | null>(null);
   const [aiReframe, setAiReframe] = useState<AIReframe | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
@@ -62,7 +61,6 @@ export default function ThoughtRecordWizardPage() {
     },
   });
 
-  // Создаём/обновляем черновик для автосохранения и AI reframe
   const saveDraftMutation = useMutation({
     mutationFn: (payload: ThoughtRecordCreate & { id?: number }) => {
       if (payload.id) {
@@ -113,20 +111,12 @@ export default function ThoughtRecordWizardPage() {
     }
   };
 
-  /**
-   * AI reframe flow:
-   * 1. Сохраняем текущие данные как черновик (создаём или обновляем)
-   * 2. Получаем id черновика
-   * 3. Вызываем POST /ai/reframe/{id}
-   * 4. Показываем результат через AIReframeCard
-   */
   const handleAiReframe = async () => {
     setLoadingAi(true);
     setAiError(false);
     setAiReframe(null);
     try {
       let draftId = savedDraftId;
-      // Если черновика ещё нет — создаём
       if (!draftId) {
         const res = await thoughtRecordsApi.create({
           ...formData,
@@ -136,11 +126,7 @@ export default function ThoughtRecordWizardPage() {
         draftId = res.data.id;
         setSavedDraftId(draftId);
       } else {
-        // Обновляем существующий черновик свежими данными
-        await thoughtRecordsApi.update(draftId, {
-          ...formData,
-          is_draft: true,
-        });
+        await thoughtRecordsApi.update(draftId, { ...formData, is_draft: true });
       }
       const result = await aiApi.reframe(draftId);
       setAiReframe(result);
@@ -160,7 +146,6 @@ export default function ThoughtRecordWizardPage() {
       emotion_after_score: emotionAfter,
       is_draft: false,
     };
-    // Если черновик уже существует — обновляем, иначе создаём
     if (savedDraftId) {
       thoughtRecordsApi.update(savedDraftId, { ...payload, is_draft: false }).then(res => {
         resetDraft();
@@ -179,19 +164,19 @@ export default function ThoughtRecordWizardPage() {
 
   if (isFinishScreen) {
     return (
-      <div className='wizard-page'>
-        <div className='wizard-header'>
-          <h1>Завершение</h1>
-          <p>Отметь когнитивные искажения и оцени эмоцию</p>
+      <div className={styles.wizardPage}>
+        <div className={styles.header}>
+          <h2>Завершение</h2>
+          <p className={styles.hint}>Отметь когнитивные искажения и оцени эмоцию</p>
         </div>
 
-        <div className='wizard-section'>
+        <div className={styles.section}>
           <h3>Когнитивные искажения</h3>
-          <div className='distortions-grid'>
+          <div className={styles.distortionsGrid}>
             {COGNITIVE_DISTORTIONS.map(d => (
               <button
                 key={d.code}
-                className={`distortion-chip${distortions.includes(d.code) ? ' active' : ''}`}
+                className={`${styles.chip} ${distortions.includes(d.code) ? styles.chipActive : ''}`}
                 onClick={() => toggleDistortion(d.code)}
                 type='button'
               >
@@ -201,64 +186,69 @@ export default function ThoughtRecordWizardPage() {
           </div>
         </div>
 
-        <div className='wizard-section'>
+        <div className={styles.section}>
           <label className='label'>Интенсивность эмоции ДО (1–10)</label>
-          <input
-            type='range' min={1} max={10} value={emotionBefore}
-            onChange={e => setEmotionBefore(Number(e.target.value))}
-          />
-          <span className='range-value'>{emotionBefore}</span>
+          <div className={styles.rangeRow}>
+            <input
+              type='range' min={1} max={10} value={emotionBefore}
+              onChange={e => setEmotionBefore(Number(e.target.value))}
+              className='slider'
+            />
+            <span className={styles.rangeValue}>{emotionBefore}</span>
+          </div>
         </div>
 
-        <div className='wizard-section'>
+        <div className={styles.section}>
           <label className='label'>Интенсивность эмоции ПОСЛЕ (1–10)</label>
-          <input
-            type='range' min={1} max={10} value={emotionAfter}
-            onChange={e => setEmotionAfter(Number(e.target.value))}
-          />
-          <span className='range-value'>{emotionAfter}</span>
+          <div className={styles.rangeRow}>
+            <input
+              type='range' min={1} max={10} value={emotionAfter}
+              onChange={e => setEmotionAfter(Number(e.target.value))}
+              className='slider'
+            />
+            <span className={styles.rangeValue}>{emotionAfter}</span>
+          </div>
         </div>
 
         <button
-          className='btn btn-primary btn-full'
+          className={`btn btn-primary ${styles.btnFull}`}
           onClick={handleFinish}
           disabled={createMutation.isPending}
-          style={{ marginTop: 'var(--space-4)', width: '100%' }}
         >
           {createMutation.isPending ? 'Сохранение...' : 'Сохранить запись'}
         </button>
 
         {createMutation.isError && (
-          <p className='error-text'>Ошибка сохранения. Попробуй ещё раз.</p>
+          <p className={styles.errorText}>Ошибка сохранения. Попробуй ещё раз.</p>
         )}
       </div>
     );
   }
 
   return (
-    <div className='wizard-page'>
-      <div className='wizard-progress'>
-        <div className='wizard-progress-bar' style={{ width: `${progress}%` }} />
+    <div className={styles.wizardPage}>
+      <div className={styles.progress}>
+        <div className={styles.progressBar} style={{ width: `${progress}%` }} />
       </div>
 
-      <div className='wizard-header'>
-        <span className='wizard-step-counter'>{step} / {STEPS.length}</span>
+      <div className={styles.header}>
+        <span className={styles.stepCounter}>{step} / {STEPS.length}</span>
         <h2>{currentStep.title}</h2>
-        <p className='wizard-hint'>{currentStep.hint}</p>
+        <p className={styles.hint}>{currentStep.hint}</p>
       </div>
 
-      <form onSubmit={handleSubmit(onStepSubmit)} className='wizard-form'>
+      <form onSubmit={handleSubmit(onStepSubmit)} className={styles.form}>
         <textarea
           {...register('text')}
-          className={`wizard-textarea${errors.text ? ' error' : ''}`}
+          className={`${styles.textarea} ${errors.text ? styles.textareaError : ''}`}
           placeholder='Напиши здесь...'
           rows={5}
           autoFocus
         />
-        {errors.text && <span className='error-text'>{errors.text.message}</span>}
+        {errors.text && <span className={styles.errorText}>{errors.text.message}</span>}
 
         {isReframeStep && (
-          <div className='ai-hint-block'>
+          <div className={styles.aiBlock}>
             <button
               type='button'
               className='btn btn-ghost btn-sm'
@@ -269,24 +259,20 @@ export default function ThoughtRecordWizardPage() {
             </button>
 
             {aiError && (
-              <p className='error-text' style={{ marginTop: 'var(--space-2)' }}>
-                AI недоступен, попробуй позже
-              </p>
+              <p className={styles.errorText}>AI недоступен, попробуй позже</p>
             )}
 
             {aiReframe && (
-              <div style={{ marginTop: 'var(--space-3)' }}>
-                <AIReframeCard
-                  reframe={aiReframe}
-                  onUse={(text) => setValue('text', text)}
-                  onDismiss={() => setAiReframe(null)}
-                />
-              </div>
+              <AIReframeCard
+                reframe={aiReframe}
+                onUse={(text) => setValue('text', text)}
+                onDismiss={() => setAiReframe(null)}
+              />
             )}
           </div>
         )}
 
-        <div className='wizard-actions'>
+        <div className={styles.actions}>
           <button type='button' className='btn btn-ghost' onClick={handleBack}>
             Назад
           </button>

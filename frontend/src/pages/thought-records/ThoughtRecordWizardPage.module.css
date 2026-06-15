@@ -1,0 +1,169 @@
+/* ThoughtRecordWizardPage — CSS Module */
+
+.wizardPage {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--bottom-nav-h) - var(--top-bar-h));
+  padding: var(--space-4);
+  gap: var(--space-5);
+}
+
+/* Progress bar */
+.progress {
+  height: 3px;
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-bottom: var(--space-2);
+}
+
+.progressBar {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-full);
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Header */
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.stepCounter {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-primary);
+}
+
+.header h2 {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.hint {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+/* Form */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  flex: 1;
+}
+
+.textarea {
+  width: 100%;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-base);
+  color: var(--color-text);
+  resize: vertical;
+  min-height: 8rem;
+  line-height: 1.6;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.textarea::placeholder { color: var(--color-text-faint); }
+
+.textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-dim);
+  outline: none;
+}
+
+.textareaError {
+  border-color: var(--color-error);
+}
+
+.errorText {
+  font-size: var(--text-xs);
+  color: var(--color-error);
+}
+
+/* AI hint block (step 11) */
+.aiBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Wizard actions (Prev / Next) */
+.actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: var(--space-2);
+}
+
+/* Finish screen */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.section h3 {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* Distortions grid */
+.distortionsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-2);
+}
+
+.chip {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-align: center;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.chip:active { transform: scale(0.97); }
+
+.chipActive {
+  background: var(--color-primary-dim);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* Range slider + value */
+.rangeRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.rangeValue {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-primary);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.btnFull {
+  width: 100%;
+}
