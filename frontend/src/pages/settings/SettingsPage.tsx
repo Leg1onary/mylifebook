@@ -2,17 +2,17 @@ import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { settingsApi } from '@/api/settings';
-import { useAuthStore } from '@/store/authStore';
+import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
-export function SettingsPage() {
+export default function SettingsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const logout = useAuthStore(s => s.logout);
+  const { logout } = useAuth();
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ['settings'],
-    queryFn: settingsApi.get,
+    queryFn: () => settingsApi.get().then(r => r.data),
   });
 
   const { register, handleSubmit, formState: { isDirty } } = useForm({
@@ -28,15 +28,12 @@ export function SettingsPage() {
   });
 
   const saveMutation = useMutation({
-    mutationFn: settingsApi.update,
+    mutationFn: (d: any) => settingsApi.update(d).then(r => r.data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings'] }),
   });
 
   const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch {}
-    logout();
+    await logout();
     navigate('/login');
   };
 

@@ -13,14 +13,14 @@ const GUIDED_QUESTIONS = [
   'Что ты хочешь изменить или продолжить на следующей неделе?',
 ];
 
-export function WeeklyReviewPage() {
+export default function WeeklyReviewPage() {
   const queryClient = useQueryClient();
   const weekStart = getCurrentWeekStart();
   const [loadingAi, setLoadingAi] = useState(false);
 
   const { data: review, isLoading } = useQuery({
     queryKey: ['weekly', weekStart],
-    queryFn: () => weeklyApi.getByWeekStart(weekStart),
+    queryFn: () => weeklyApi.getByWeekStart(weekStart).then(r => r.data),
   });
 
   const { register, handleSubmit, formState: { isDirty } } = useForm({
@@ -33,7 +33,7 @@ export function WeeklyReviewPage() {
   });
 
   const saveMutation = useMutation({
-    mutationFn: (data: any) => weeklyApi.update(weekStart, data),
+    mutationFn: (data: any) => weeklyApi.update(weekStart, data).then(r => r.data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['weekly', weekStart] }),
   });
 

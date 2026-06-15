@@ -3,10 +3,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { thoughtRecordsApi } from '@/api/thoughtRecords';
 import { aiApi } from '@/api/ai';
-import { useDraftStore } from '@/store/draftStore';
+import { useDraft } from '@/hooks/useDraft';
 import { COGNITIVE_DISTORTIONS } from '@/lib/constants';
 import type { ThoughtRecordCreate } from '@/types';
 
@@ -31,11 +31,11 @@ const stepSchema = z.object({
 
 type StepForm = z.infer<typeof stepSchema>;
 
-export function ThoughtRecordWizardPage() {
+export default function ThoughtRecordWizardPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const triggerId = searchParams.get('trigger_id');
-  const { draft, updateDraft, clearDraft } = useDraftStore();
+  const { draft, updateDraft, resetDraft } = useDraft();
 
   const [step, setStep] = useState(draft.currentStep ?? 1);
   const [formData, setFormData] = useState<Partial<ThoughtRecordCreate>>(draft.data ?? {});
@@ -53,8 +53,8 @@ export function ThoughtRecordWizardPage() {
   const createMutation = useMutation({
     mutationFn: thoughtRecordsApi.create,
     onSuccess: (data) => {
-      clearDraft();
-      navigate(`/thought-records/${data.id}`);
+      resetDraft();
+      navigate(`/thoughts/${data.data.id}`);
     },
   });
 
@@ -70,7 +70,6 @@ export function ThoughtRecordWizardPage() {
     setFormData(updated);
     updateDraft({ data: updated, currentStep: step + 1 });
 
-    // Auto-save draft every 3 steps
     if (step % 3 === 0) {
       saveDraftMutation.mutate({ ...updated, is_draft: true } as any);
     }
@@ -99,7 +98,7 @@ export function ThoughtRecordWizardPage() {
         evidence_for: formData.evidence_for_text ?? '',
         evidence_against: formData.evidence_against_text ?? '',
       });
-      setAiReframe(result.alternative_thought);
+      setAiReframe(result.data.alternative_thought);
     } catch {
       // silent fail
     } finally {
@@ -125,9 +124,7 @@ export function ThoughtRecordWizardPage() {
     );
   };
 
-  // Step 11 special: show AI reframe button
   const isReframeStep = step === 11;
-  // After step 12: distortions + emotions
   const isFinishScreen = step > STEPS.length;
 
   if (isFinishScreen) {
@@ -239,7 +236,7 @@ export function ThoughtRecordWizardPage() {
             Назад
           </button>
           <button type="submit" className="btn btn-primary">
-            {step === STEPS.length ? 'Далее →' : 'Далее →'}
+            Далее →
           </button>
         </div>
       </form>
