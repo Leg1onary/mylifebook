@@ -1,6 +1,8 @@
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -15,16 +17,19 @@ from app.config import get_settings
 
 router = APIRouter()
 settings = get_settings()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 async def register(payload: UserRegister, db: AsyncSession = Depends(get_db)):
-    existing = await db.execute(select(User).where(User.email == payload.email))
+    # Normalize email to lowercase to prevent duplicates
+    email = payload.email.lower().strip()
+    existing = await db.execute(select(User).where(User.email == email))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already registered")
 
     user = User(
-        email=payload.email,
+        email=email,
         hashed_password=hash_password(payload.password),
         display_name=payload.display_name,
         timezone=payload.timezone,
@@ -40,19 +45,48 @@ async def register(payload: UserRegister, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(payload: UserLogin, db: AsyncSession = Depends(get_db)):
-    user = await authenticate_user(db, payload.email, payload.password)
+@limiter.limit("10/minute")
+async def login(request: Request, payload: UserLogin, db: AsyncSession = Depends(get_db)):
+    # Authenticate always against normalized email
+    user = await authenticate_user(db, payload.email.lower().strip(), payload.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
         )
-    expire_seconds = settings.access_token_expire_minutes * 60
+    expire_delta = timedelta(minutes=settings.access_token_expire_minutes)
     token = create_access_token(
         subject=user.id,
-        expires_delta=timedelta(minutes=settings.access_token_expire_minutes),
+        expires_delta=expire_delta,
     )
-    return TokenResponse(access_token=token, expires_in=expire_seconds)
+    return TokenResponse(
+        access_token=token,
+        expires_in=int(expire_delta.total_seconds()),
+    )
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(current_user: User = Depends(get_current_user)):
+    """
+    Stateless JWT — logout is handled client-side by discarding the token.
+    This endpoint exists so the frontend can call a real URL and clear state cleanly.
+    In the future a token blocklist can be added here.
+    """
+    return
+
+
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh_token(current_user: User = Depends(get_current_user)):
+    """Issue a fresh token for an already-authenticated user."""
+    expire_delta = timedelta(minutes=settings.access_token_expire_minutes)
+    token = create_access_token(
+        subject=current_user.id,
+        expires_delta=expire_delta,
+    )
+    return TokenResponse(
+        access_token=token,
+        expires_in=int(expire_delta.total_seconds()),
+    )
 
 
 @router.get("/me", response_model=UserOut)
