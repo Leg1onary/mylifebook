@@ -1,0 +1,43 @@
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  cursor: pointer;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  transition: background var(--transition-interactive);
+  /* Minimum touch target */
+  min-height: 3rem;
+}
+
+.row:hover {
+  background: var(--color-surface-2);
+}
+
+.input {
+  margin-top: 2px;
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.textGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.description {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
