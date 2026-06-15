@@ -8,8 +8,15 @@ from app.config import get_settings
 settings = get_settings()
 
 
-def create_access_token(subject: str | int, extra: dict[str, Any] | None = None) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
+def create_access_token(
+    subject: str | int,
+    expires_delta: timedelta | None = None,
+    extra: dict[str, Any] | None = None,
+) -> str:
+    expire = datetime.now(timezone.utc) + (
+        expires_delta if expires_delta is not None
+        else timedelta(minutes=settings.access_token_expire_minutes)
+    )
     payload: dict[str, Any] = {
         "sub": str(subject),
         "exp": expire,
