@@ -5,7 +5,9 @@ import { weeklyApi } from '@/api/weekly';
 import { aiApi } from '@/api/ai';
 import { formatDate, getCurrentWeekStart } from '@/lib/dates';
 import { AIWeeklySummaryCard } from '@/components/ai/AIWeeklySummaryCard';
+import { Page } from '@/components/layout/Page';
 import type { WeeklyReviewUpdate } from '@/types';
+import styles from './WeeklyReviewPage.module.css';
 
 type ReviewFormFields = Required<Pick<WeeklyReviewUpdate,
   'guided_q1' | 'guided_q2' | 'guided_q3' | 'guided_q4' | 'guided_q5' | 'guided_q6' |
@@ -48,13 +50,13 @@ export default function WeeklyReviewPage() {
   useEffect(() => {
     if (!review) return;
     reset({
-      guided_q1:      review.guided_q1      ?? '',
-      guided_q2:      review.guided_q2      ?? '',
-      guided_q3:      review.guided_q3      ?? '',
-      guided_q4:      review.guided_q4      ?? '',
-      guided_q5:      review.guided_q5      ?? '',
-      guided_q6:      review.guided_q6      ?? '',
-      conclusion:     review.conclusion     ?? '',
+      guided_q1:       review.guided_q1       ?? '',
+      guided_q2:       review.guided_q2       ?? '',
+      guided_q3:       review.guided_q3       ?? '',
+      guided_q4:       review.guided_q4       ?? '',
+      guided_q5:       review.guided_q5       ?? '',
+      guided_q6:       review.guided_q6       ?? '',
+      conclusion:      review.conclusion      ?? '',
       next_week_focus: review.next_week_focus ?? '',
     });
   }, [review, reset]);
@@ -78,13 +80,15 @@ export default function WeeklyReviewPage() {
     }
   };
 
-  if (isLoading) return <div className="page-loading"><div className="spinner" /></div>;
+  if (isLoading) return (
+    <Page><div className={styles.loading}><div className="spinner" /></div></Page>
+  );
 
   return (
-    <div className="page">
-      <div className="page-header">
+    <Page>
+      <div className={styles.header}>
         <h1>Недельный обзор</h1>
-        <time className="page-subtitle">{formatDate(weekStart)}</time>
+        <time className={styles.subtitle}>{formatDate(weekStart)}</time>
       </div>
 
       {review?.ai_summary && (
@@ -92,49 +96,49 @@ export default function WeeklyReviewPage() {
       )}
 
       {!review?.ai_summary && (
-        <div className="ai-trigger-wrap">
+        <div className={styles.aiTriggerWrap}>
           <button
-            className="btn btn-ghost btn-sm ai-trigger"
+            className="btn btn-ghost"
             onClick={handleAiSummary}
             disabled={loadingAi}
           >
             {loadingAi ? '🤖 Анализирую неделю...' : '🤖 Сгенерировать AI-резюме'}
           </button>
           {aiError && (
-            <p className="error-text text-sm">Не удалось сгенерировать. Попробуй позже.</p>
+            <p className={styles.errorText}>Не удалось сгенерировать. Попробуй позже.</p>
           )}
         </div>
       )}
 
-      <form onSubmit={handleSubmit(d => saveMutation.mutate(d))} className="weekly-form">
-        <div className="guided-questions-block">
+      <form onSubmit={handleSubmit(d => saveMutation.mutate(d))} className={styles.form}>
+        <div className={styles.guidedBlock}>
           <h3>Направляющие вопросы</h3>
           {GUIDED_KEYS.map((key, i) => (
-            <div key={key} className="form-field">
+            <div key={key} className={styles.formField}>
               <label>{GUIDED_QUESTIONS[i]}</label>
               <textarea {...register(key)} rows={3} />
             </div>
           ))}
         </div>
 
-        <div className="form-field">
+        <div className={styles.formField}>
           <label>Вывод недели</label>
           <textarea {...register('conclusion')} rows={3} />
         </div>
 
-        <div className="form-field">
+        <div className={styles.formField}>
           <label>Фокус на следующей неделе</label>
           <textarea {...register('next_week_focus')} rows={2} />
         </div>
 
         <button
           type="submit"
-          className="btn btn-primary btn-full"
+          className={`btn btn-primary ${styles.btnFull}`}
           disabled={!isDirty || saveMutation.isPending}
         >
           {saveMutation.isPending ? 'Сохранение...' : 'Сохранить обзор'}
         </button>
       </form>
-    </div>
+    </Page>
   );
 }

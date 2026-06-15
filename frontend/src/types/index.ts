@@ -76,7 +76,7 @@ export interface TriggerEventCreate {
   category?: string;
 }
 
-// AI Reframe JSONB — populated by POST /ai/reframe
+// AI Reframe JSONB — populated by POST /ai/reframe/{id}
 export interface AIReframe {
   reframe: string;
   saved?: boolean;
@@ -105,7 +105,7 @@ export interface ThoughtRecord {
   distortions?: string[];
   new_perspective?: string;
   new_action?: string;
-  ai_reframe?: string | null;
+  ai_reframe?: AIReframe | null;
   followup_text?: string;
   followup_emotion_after?: Array<{ tag: string; intensity: number }>;
   linked_trigger_id?: number;

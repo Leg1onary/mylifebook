@@ -3,7 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { personalContextApi } from '@/api/personalContext';
 import { PersonalContextHint } from '@/components/ai/PersonalContextHint';
+import { Page } from '@/components/layout/Page';
 import type { PersonalContextUpdate } from '@/types';
+import styles from './PersonalContextPage.module.css';
 
 type FormValues = {
   old_laws: string;
@@ -69,7 +71,6 @@ export default function PersonalContextPage() {
     setLoadingExtract(true);
     setExtractError(false);
     try {
-      // POST /personal-context/extract — { raw_text, merge: false }
       await personalContextApi.extract(rawText, false);
       await queryClient.invalidateQueries({ queryKey: ['personal-context'] });
       setRawText('');
@@ -82,91 +83,92 @@ export default function PersonalContextPage() {
     }
   };
 
-  if (isLoading) return <div className="page-loading"><div className="spinner" /></div>;
+  if (isLoading) return (
+    <Page><div className={styles.loading}><div className="spinner" /></div></Page>
+  );
 
   return (
-    <div className="page">
-      <div className="page-header">
+    <Page>
+      <div className={styles.header}>
         <h1>Личный контекст</h1>
       </div>
 
       <PersonalContextHint />
 
-      {/* POST /personal-context/extract */}
-      <div className="card">
+      <div className={`card ${styles.extractCard}`}>
         <h3>🤖 Извлечь из текста</h3>
-        <p className="text-muted text-sm">
+        <p className={styles.extractHint}>
           Напиши о себе в свободной форме — AI найдёт ключевые паттерны и добавит их в профиль
         </p>
         <textarea
+          className={styles.extractTextarea}
           value={rawText}
           onChange={e => setRawText(e.target.value)}
           rows={4}
           placeholder="Например: я часто боюсь, что меня осудят, мне важно одобрение близких..."
-          className="mt-2"
           disabled={loadingExtract}
         />
         <button
-          className="btn btn-primary btn-sm mt-2"
+          className="btn btn-primary"
           onClick={handleExtract}
           disabled={loadingExtract || !rawText.trim()}
         >
           {loadingExtract ? 'Извлекаю...' : '✨ Извлечь'}
         </button>
-        {extractSuccess && <p className="success-text mt-1">✅ Контекст обновлён</p>}
-        {extractError && <p className="error-text mt-1">Не удалось извлечь. Попробуй ещё раз.</p>}
+        {extractSuccess && <p className={styles.successText}>✅ Контекст обновлён</p>}
+        {extractError && <p className={styles.errorText}>Не удалось извлечь. Попробуй ещё раз.</p>}
       </div>
 
-      <form onSubmit={handleSubmit(d => saveMutation.mutate(d))} className="context-form">
-        <div className="form-field">
+      <form onSubmit={handleSubmit(d => saveMutation.mutate(d))} className={styles.form}>
+        <div className={styles.formField}>
           <label>Старые законы</label>
-          <p className="field-hint text-xs text-muted">Каждый с новой строки</p>
+          <span className={styles.fieldHint}>Каждый с новой строки</span>
           <textarea {...register('old_laws')} rows={4}
             placeholder="Моя ценность = моя польза...\nЕсли я слабый — меня бросят..." />
         </div>
 
-        <div className="form-field">
+        <div className={styles.formField}>
           <label>Типичные триггеры</label>
-          <p className="field-hint text-xs text-muted">Каждый с новой строки</p>
+          <span className={styles.fieldHint}>Каждый с новой строки</span>
           <textarea {...register('triggers')} rows={3}
             placeholder="Долгое молчание в переписке...\nОтказ в просьбе..." />
         </div>
 
-        <div className="form-field">
+        <div className={styles.formField}>
           <label>Типичные искажения</label>
-          <p className="field-hint text-xs text-muted">Каждое с новой строки</p>
+          <span className={styles.fieldHint}>Каждое с новой строки</span>
           <textarea {...register('typical_distortions')} rows={3}
             placeholder="Чтение мыслей...\nКатастрофизация..." />
         </div>
 
-        <div className="form-field">
+        <div className={styles.formField}>
           <label>Цели роста</label>
-          <p className="field-hint text-xs text-muted">Каждая с новой строки. Используются в SOS и AI-подсказках.</p>
+          <span className={styles.fieldHint}>Каждая с новой строки. Используются в SOS и AI-подсказках.</span>
           <textarea {...register('growth_goals')} rows={3}
             placeholder="Разорвать связь ценности и полезности...\nНаучиться просить помощи..." />
         </div>
 
-        <div className="form-field">
+        <div className={styles.formField}>
           <label>Предпочтения общения</label>
           <textarea {...register('communication_prefs')} rows={2}
             placeholder="Предпочитаю прямую обратную связь без смягчений..." />
         </div>
 
-        <div className="form-field">
+        <div className={styles.formField}>
           <label>Заметки</label>
           <textarea {...register('context_notes')} rows={3} />
         </div>
 
-        {saveMutation.isError && <p className="error-text">Не удалось сохранить. Попробуй ещё раз.</p>}
+        {saveMutation.isError && <p className={styles.errorText}>Не удалось сохранить. Попробуй ещё раз.</p>}
 
         <button
           type="submit"
-          className="btn btn-primary btn-full"
+          className={`btn btn-primary ${styles.btnFull}`}
           disabled={!isDirty || saveMutation.isPending}
         >
           {saveMutation.isPending ? 'Сохранение...' : 'Сохранить'}
         </button>
       </form>
-    </div>
+    </Page>
   );
 }

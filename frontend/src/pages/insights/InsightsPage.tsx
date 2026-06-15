@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import { insightsApi, type InsightsPeriod } from '@/api/insights';
 import { Page } from '@/components/layout/Page';
+import styles from './InsightsPage.module.css';
 
 const PERIODS: Array<{ label: string; period: InsightsPeriod }> = [
   { label: '7 дней', period: '7d' },
@@ -27,26 +28,25 @@ export default function InsightsPage() {
     queryFn: () => insightsApi.get(period),
   });
 
-  // Merge parallel trend arrays into one array for LineChart
   const moodTrend = (data?.mood_trend ?? []).map((item, i) => ({
     date: item.date,
-    mood:      item.value,
-    anxiety:   data?.anxiety_trend[i]?.value   ?? null,
-    shame:     data?.shame_trend[i]?.value     ?? null,
+    mood:       item.value,
+    anxiety:    data?.anxiety_trend[i]?.value    ?? null,
+    shame:      data?.shame_trend[i]?.value      ?? null,
     loneliness: data?.loneliness_trend[i]?.value ?? null,
   }));
 
   return (
     <Page>
-      <div className="page-header">
+      <div className={styles.header}>
         <h1>Аналитика</h1>
       </div>
 
-      <div className="period-selector">
+      <div className={styles.periodSelector}>
         {PERIODS.map(p => (
           <button
             key={p.period}
-            className={`period-btn ${period === p.period ? 'active' : ''}`}
+            className={`${styles.periodBtn} ${period === p.period ? styles.periodBtnActive : ''}`}
             onClick={() => setPeriod(p.period)}
           >
             {p.label}
@@ -54,11 +54,10 @@ export default function InsightsPage() {
         ))}
       </div>
 
-      {/* Mood line */}
-      <div className="card insights-card">
+      <div className={`card ${styles.insightsCard}`}>
         <h3>Динамика настроения</h3>
         {isLoading ? (
-          <div className="skeleton skeleton-image" />
+          <div className={`skeleton ${styles.skeletonChart}`} />
         ) : moodTrend.length ? (
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={moodTrend} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
@@ -70,15 +69,14 @@ export default function InsightsPage() {
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-muted">Недостаточно данных</p>
+          <p className={styles.empty}>Недостаточно данных</p>
         )}
       </div>
 
-      {/* Anxiety / shame / loneliness */}
-      <div className="card insights-card">
+      <div className={`card ${styles.insightsCard}`}>
         <h3>Тревога, стыд, одиночество</h3>
         {isLoading ? (
-          <div className="skeleton skeleton-image" />
+          <div className={`skeleton ${styles.skeletonChart}`} />
         ) : moodTrend.length ? (
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={moodTrend} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
@@ -92,15 +90,14 @@ export default function InsightsPage() {
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-muted">Недостаточно данных</p>
+          <p className={styles.empty}>Недостаточно данных</p>
         )}
       </div>
 
-      {/* Trigger categories */}
-      <div className="card insights-card">
+      <div className={`card ${styles.insightsCard}`}>
         <h3>Триггеры по категориям</h3>
         {isLoading ? (
-          <div className="skeleton skeleton-image" />
+          <div className={`skeleton ${styles.skeletonChart}`} />
         ) : data?.trigger_categories?.length ? (
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={data.trigger_categories} layout="vertical" margin={{ left: 20, right: 10 }}>
@@ -112,15 +109,14 @@ export default function InsightsPage() {
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-muted">Нет триггеров за период</p>
+          <p className={styles.empty}>Нет триггеров за период</p>
         )}
       </div>
 
-      {/* Old laws frequency */}
-      <div className="card insights-card">
+      <div className={`card ${styles.insightsCard}`}>
         <h3>Старые законы</h3>
         {isLoading ? (
-          <div className="skeleton skeleton-image" />
+          <div className={`skeleton ${styles.skeletonChart}`} />
         ) : data?.old_laws_frequency?.length ? (
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={data.old_laws_frequency} layout="vertical" margin={{ left: 20, right: 10 }}>
@@ -132,21 +128,20 @@ export default function InsightsPage() {
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-muted">Нет данных по старым законам</p>
+          <p className={styles.empty}>Нет данных по старым законам</p>
         )}
       </div>
 
-      {/* Summary stats */}
       {data && (
-        <div className="card insights-card">
+        <div className={`card ${styles.insightsCard}`}>
           <h3>Сводка</h3>
-          <div className="stats-grid">
-            <div className="stat-item"><span className="stat-label">Серия чекинов</span><span className="stat-value">{data.checkins_streak}</span></div>
-            <div className="stat-item"><span className="stat-label">Всего чекинов</span><span className="stat-value">{data.checkins_total}</span></div>
-            <div className="stat-item"><span className="stat-label">Триггеров</span><span className="stat-value">{data.triggers_total}</span></div>
-            <div className="stat-item"><span className="stat-label">Записей мышления</span><span className="stat-value">{data.tr_total}</span></div>
-            <div className="stat-item"><span className="stat-label">Завершено экспериментов</span><span className="stat-value">{data.experiments_completed}</span></div>
-            <div className="stat-item"><span className="stat-label">Активных экспериментов</span><span className="stat-value">{data.experiments_active}</span></div>
+          <div className={styles.statsGrid}>
+            <div className={styles.statItem}><span className={styles.statLabel}>Серия чекинов</span><span className={styles.statValue}>{data.checkins_streak}</span></div>
+            <div className={styles.statItem}><span className={styles.statLabel}>Всего чекинов</span><span className={styles.statValue}>{data.checkins_total}</span></div>
+            <div className={styles.statItem}><span className={styles.statLabel}>Триггеров</span><span className={styles.statValue}>{data.triggers_total}</span></div>
+            <div className={styles.statItem}><span className={styles.statLabel}>Записей мышления</span><span className={styles.statValue}>{data.tr_total}</span></div>
+            <div className={styles.statItem}><span className={styles.statLabel}>Завершено экспериментов</span><span className={styles.statValue}>{data.experiments_completed}</span></div>
+            <div className={styles.statItem}><span className={styles.statLabel}>Активных экспериментов</span><span className={styles.statValue}>{data.experiments_active}</span></div>
           </div>
         </div>
       )}
