@@ -85,12 +85,10 @@ export default function ThoughtRecordDetailPage() {
         ) : null)}
       </div>
 
+      {/* ai_reframe is already AIReframe shape from backend — pass directly */}
       {record.ai_reframe && (
         <div className="detail-section">
-          <AIReframeCard reframe={typeof record.ai_reframe === 'string'
-            ? { reframe: record.ai_reframe, saved: true }
-            : record.ai_reframe
-          } />
+          <AIReframeCard reframe={record.ai_reframe} />
         </div>
       )}
 
