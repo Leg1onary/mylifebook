@@ -11,9 +11,10 @@ export const personalContextApi = {
     api.patch<PersonalContext>('/personal-context', payload),
 
   /**
-   * POST /personal-context/raw
-   * Freeform text → AI extracts structured fields and merges into profile
+   * POST /ai/extract-profile
+   * Freeform text → AI extracts structured fields and merges into profile.
+   * Field name must be raw_text to match Pydantic ExtractProfileRequest schema.
    */
-  extract: (text: string) =>
-    api.post<PersonalContext>('/personal-context/raw', { text }),
+  extract: (rawText: string) =>
+    api.post<PersonalContext>('/ai/extract-profile', { raw_text: rawText }),
 };

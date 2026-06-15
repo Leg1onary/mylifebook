@@ -76,16 +76,25 @@ export interface TriggerEventCreate {
   category?: string;
 }
 
-// AI Reframe JSONB — populated by POST /ai/reframe/{id}
+/**
+ * AI Reframe JSONB — populated by POST /ai/reframe/{thought_record_id}
+ * Maps to reframing_service.py response fields.
+ */
 export interface AIReframe {
+  /** 3-4 sentence personalised reframe from the service */
   reframe: string;
-  saved?: boolean;
+  /** Cognitive distortions identified by AI */
+  cognitive_distortions: string[];
+  /** Which old core belief was triggered */
+  old_law_spotted: string;
+  /** Honest, balanced reformulation of the automatic thought */
+  alternative_thought: string;
+  /** One concrete suggested next action */
+  suggested_action: string;
+  /** True when crisis phrases detected — AI call is skipped */
   crisis?: boolean;
-  detail?: string;
-  resources?: {
-    hotline?: string;
-    text?: string;
-  };
+  /** Human-readable crisis message with hotline info (8-800-2000-122) */
+  message?: string;
 }
 
 // Thought Record — matches GET /thought-records schema
