@@ -143,6 +143,11 @@ p, li { text-wrap: pretty; }
   font-size: var(--text-xs);
 }
 
+.btn-xs {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+}
+
 /* Inputs */
 .input {
   width: 100%;
@@ -199,6 +204,20 @@ p, li { text-wrap: pretty; }
 .badge-success { background: var(--color-success-dim); color: var(--color-success); }
 .badge-warning { background: var(--color-warning-dim); color: var(--color-warning); }
 .badge-error   { background: var(--color-error-dim);   color: var(--color-error); }
+
+/* Tags (alias for badge — used in legacy components) */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  background: var(--color-surface-3);
+  color: var(--color-text-muted);
+}
+.tag-muted { background: var(--color-surface-3); color: var(--color-text-muted); }
+.tag-accent { background: var(--color-primary-dim); color: var(--color-primary); }
 
 /* Skeleton shimmer */
 @keyframes shimmer {
@@ -345,6 +364,52 @@ p, li { text-wrap: pretty; }
 }
 
 /* ============================================================
+   Card list layout (used by Journal, Triggers, Experiments)
+   ============================================================ */
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-2);
+}
+
+.card-date {
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+  margin-right: auto;
+}
+
+.card-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: var(--space-2);
+}
+
+.card-body {
+  font-size: var(--text-base);
+  color: var(--color-text);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.card-body-collapsed {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* ============================================================
    Form utilities (used in forms without CSS Modules)
    ============================================================ */
 .form-card {
@@ -369,7 +434,9 @@ p, li { text-wrap: pretty; }
 .form-field textarea,
 .form-field input[type='text'],
 .form-field input[type='email'],
-.form-field input[type='password'] {
+.form-field input[type='password'],
+.form-field input[type='number'],
+.form-field select {
   width: 100%;
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);
@@ -380,8 +447,14 @@ p, li { text-wrap: pretty; }
   transition: border-color var(--transition), box-shadow var(--transition);
 }
 
+.form-field select {
+  cursor: pointer;
+  appearance: auto;
+}
+
 .form-field textarea:focus,
-.form-field input:focus {
+.form-field input:focus,
+.form-field select:focus {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px var(--color-primary-dim);
   outline: none;
@@ -403,4 +476,35 @@ p, li { text-wrap: pretty; }
 .success-text {
   font-size: var(--text-xs);
   color: var(--color-success);
+}
+
+/* ============================================================
+   Empty state (global, used across pages)
+   ============================================================ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-16) var(--space-4);
+  gap: var(--space-3);
+  color: var(--color-text-muted);
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: var(--space-2);
+  color: var(--color-text-faint);
+}
+
+.empty-state h3 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.empty-state p {
+  font-size: var(--text-base);
+  max-width: 32ch;
+  margin-bottom: var(--space-2);
 }

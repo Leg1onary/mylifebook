@@ -7,6 +7,7 @@ import { journalApi } from '@/api/journal';
 import { triggersApi } from '@/api/triggers';
 import { formatDate } from '@/lib/dates';
 import type { JournalEntry, TriggerEvent } from '@/types';
+import styles from './JournalPage.module.css';
 
 const createSchema = z.object({
   title: z.string().optional(),
@@ -17,7 +18,7 @@ const createSchema = z.object({
 
 type CreateForm = z.infer<typeof createSchema>;
 
-export function JournalPage() {
+export default function JournalPage() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -27,7 +28,6 @@ export function JournalPage() {
     queryFn: () => journalApi.list().then((r: { data: JournalEntry[] }) => r.data),
   });
 
-  // Fetch recent triggers for linking
   const { data: triggers = [] } = useQuery({
     queryKey: ['triggers', 'recent'],
     queryFn: () => triggersApi.list({ limit: 20 }).then((r: { data: TriggerEvent[] }) => r.data),
@@ -60,8 +60,8 @@ export function JournalPage() {
   if (isLoading) return <div className="page-loading"><div className="spinner" /></div>;
 
   return (
-    <div className="page">
-      <div className="page-header">
+    <div className={styles.page}>
+      <div className={styles.header}>
         <h1>Свободный журнал</h1>
         <button className="btn btn-primary btn-sm" onClick={() => setShowForm(!showForm)}>
           {showForm ? 'Отмена' : '+ Запись'}
@@ -70,7 +70,7 @@ export function JournalPage() {
 
       {showForm && (
         <form
-          className="card form-card"
+          className={`card form-card ${styles.form}`}
           onSubmit={handleSubmit(d => createMutation.mutate(d))}
         >
           <div className="form-field">
@@ -99,7 +99,6 @@ export function JournalPage() {
             />
           </div>
 
-          {/* Link to trigger event — TZ п.18 */}
           {triggers.length > 0 && (
             <div className="form-field">
               <label>Связать с триггером (необязательно)</label>
@@ -108,6 +107,7 @@ export function JournalPage() {
                 control={control}
                 render={({ field }) => (
                   <select
+                    className="input"
                     value={field.value ?? ''}
                     onChange={e => field.onChange(
                       e.target.value ? Number(e.target.value) : undefined
@@ -138,42 +138,42 @@ export function JournalPage() {
       )}
 
       {entries.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">📓</div>
+        <div className={styles.emptyState}>
+          <div className={styles.emptyIcon}>📓</div>
           <h3>Журнал пуст</h3>
           <p>Здесь можно писать свободно — мысли, чувства, заметки</p>
           <button className="btn btn-primary" onClick={() => setShowForm(true)}>Первая запись</button>
         </div>
       ) : (
-        <div className="card-list">
+        <div className={styles.list}>
           {entries.map((entry: JournalEntry) => (
             <div key={entry.id} className="card">
-              <div className="card-header">
-                <time className="card-date">{formatDate(entry.entry_date)}</time>
+              <div className={styles.cardHeader}>
+                <time className={styles.cardDate}>{formatDate(entry.entry_date)}</time>
                 {entry.mood != null && (
-                  <span className="tag tag-muted">настроение {entry.mood}/10</span>
+                  <span className={`badge ${styles.moodBadge}`}>настроение {entry.mood}/10</span>
                 )}
                 {entry.linked_trigger_id != null && (
-                  <span className="tag tag-accent" title={`Триггер #${entry.linked_trigger_id}`}>
+                  <span className={`badge badge-primary ${styles.linkBadge}`} title={`Триггер #${entry.linked_trigger_id}`}>
                     🔗 триггер
                   </span>
                 )}
                 <button
-                  className="btn btn-ghost btn-icon btn-xs text-error"
-                  onClick={() => { if (confirm('Удалить?')) deleteMutation.mutate(entry.id); }}
-                  aria-label="Удалить"
+                  className="btn btn-icon btn-sm"
+                  onClick={() => { if (confirm('Удалить запись?')) deleteMutation.mutate(entry.id); }}
+                  aria-label="Удалить запись"
                 >🗑</button>
               </div>
-              {entry.title && <h3 className="card-title">{entry.title}</h3>}
+              {entry.title && <h3 className={styles.cardTitle}>{entry.title}</h3>}
               <p
-                className={`card-body ${expandedId === entry.id ? '' : 'card-body-collapsed'}`}
+                className={`${styles.cardBody} ${expandedId === entry.id ? styles.cardBodyExpanded : styles.cardBodyCollapsed}`}
                 onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
               >
                 {entry.body}
               </p>
               {entry.body.length > 200 && (
                 <button
-                  className="btn btn-ghost btn-xs"
+                  className="btn btn-ghost btn-sm"
                   onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
                 >
                   {expandedId === entry.id ? 'Свернуть' : 'Читать далее'}
