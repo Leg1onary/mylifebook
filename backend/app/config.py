@@ -1,5 +1,5 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -7,32 +7,31 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
-        extra="ignore",
     )
 
     # App
     app_name: str = "MyLifeBook"
-    app_version: str = "0.1.0"
     debug: bool = False
-    secret_key: str = "change-me-in-production"
+    api_v1_prefix: str = "/api/v1"
 
     # Database
-    database_url: str = "sqlite+aiosqlite:////data/mylifebook.db"
+    database_url: str  # asyncpg DSN: postgresql+asyncpg://user:pass@host/db
 
-    # Auth
-    access_token_expire_minutes: int = 60 * 24 * 7  # 7 days
+    # JWT
+    secret_key: str
     algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60 * 24 * 7  # 7 days
 
-    # CORS
-    cors_origins: list[str] = ["https://mylifebook.ru", "http://localhost:5173"]
+    # CORS — comma-separated origins
+    cors_origins: str = "https://mylifebook.ru,https://www.mylifebook.ru"
 
-    # OpenRouter
+    # OpenRouter AI
     openrouter_api_key: str = ""
     openrouter_model: str = "anthropic/claude-3.5-haiku"
-    openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
-    # PIN (optional local PIN for extra privacy)
-    pin_enabled: bool = False
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
 
 @lru_cache

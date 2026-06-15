@@ -1,32 +1,22 @@
-from datetime import datetime
-from sqlalchemy import ForeignKey, Integer, String, Text, DateTime, func
+from sqlalchemy import Text, String, Integer, Boolean, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.database import Base
+from app.models.base import Base
 
 
 class TriggerEvent(Base):
-    """Быстрая запись триггера из SOS-режима или отдельно."""
-
     __tablename__ = "trigger_events"
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
 
-    description: Mapped[str] = mapped_column(Text, nullable=False)       # что случилось
-    category: Mapped[str | None] = mapped_column(String(50), index=True) # категория
-    intensity: Mapped[int | None] = mapped_column(Integer)               # интенсивность 1–10
-    old_script_activated: Mapped[bool] = mapped_column(default=True)     # старый паттерн включился?
-    grounding_used: Mapped[bool] = mapped_column(default=False)          # использовал заземление?
-
-    # Ссылка на полный thought record (если создан следом)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    category: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
+    intensity: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    old_script_activated: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    grounding_used: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     thought_record_id: Mapped[int | None] = mapped_column(
         ForeignKey("thought_records.id", ondelete="SET NULL"), nullable=True
     )
 
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
-
-    user: Mapped["User"] = relationship(back_populates="trigger_events")  # noqa: F821
-
-    def __repr__(self) -> str:
-        return f"<TriggerEvent id={self.id} category={self.category} intensity={self.intensity}>"
+    user = relationship("User", back_populates="trigger_events")
