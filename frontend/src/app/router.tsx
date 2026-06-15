@@ -27,7 +27,7 @@ const ExperimentDetail    = lazy_(() => import('@/pages/experiments/ExperimentDe
 const WeeklyReviewPage    = lazy_(() => import('@/pages/weekly/WeeklyReviewPage'))
 const InsightsPage        = lazy_(() => import('@/pages/insights/InsightsPage'))
 const JournalPage         = lazy_(() => import('@/pages/journal/JournalPage'))
-const ProfilePage         = lazy_(() => import('@/pages/profile/ProfilePage'))
+const ProfilePage         = lazy_(() => import('@/pages/profile/PersonalContextPage'))
 const SettingsPage        = lazy_(() => import('@/pages/settings/SettingsPage'))
 const NotFoundPage        = lazy_(() => import('@/pages/system/NotFoundPage'))
 
