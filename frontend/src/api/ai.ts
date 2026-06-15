@@ -1,11 +1,4 @@
-import { apiClient } from './client';
-
-interface ReframeRequest {
-  situation: string;
-  automatic_thought: string;
-  evidence_for?: string;
-  evidence_against?: string;
-}
+import { api } from './client';
 
 interface ReframeResponse {
   alternative_thought: string;
@@ -13,14 +6,35 @@ interface ReframeResponse {
   socratic_questions?: string[];
 }
 
+interface WeeklySummaryResponse {
+  summary: string;
+}
+
 export const aiApi = {
-  reframe: async (payload: ReframeRequest): Promise<ReframeResponse> => {
-    const { data } = await apiClient.post('/ai/reframe', payload);
+  /**
+   * Trigger AI reframe for an already-saved ThoughtRecord.
+   * Endpoint: POST /ai/reframe/{thought_record_id}
+   */
+  reframe: async (thoughtRecordId: number): Promise<ReframeResponse> => {
+    const { data } = await api.post(`/ai/reframe/${thoughtRecordId}`);
     return data;
   },
 
-  weeklyInsights: async (weeklyReviewId: number): Promise<{ summary: string }> => {
-    const { data } = await apiClient.post('/ai/weekly-insights', { weekly_review_id: weeklyReviewId });
+  /**
+   * Generate AI weekly summary.
+   * Endpoint: POST /ai/weekly-summary
+   */
+  weeklySummary: async (weeklyReviewId: number): Promise<WeeklySummaryResponse> => {
+    const { data } = await api.post('/ai/weekly-summary', { weekly_review_id: weeklyReviewId });
+    return data;
+  },
+
+  /**
+   * Extract structured profile from raw personal context text.
+   * Endpoint: POST /ai/extract-profile
+   */
+  extractProfile: async (rawText: string): Promise<{ extracted_json: Record<string, unknown> }> => {
+    const { data } = await api.post('/ai/extract-profile', { raw_text: rawText });
     return data;
   },
 };

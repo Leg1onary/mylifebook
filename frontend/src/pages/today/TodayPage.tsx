@@ -2,13 +2,17 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { todayApi } from '@/api/today'
 import { Page } from '@/components/layout/Page'
+import { SOSModal } from '@/components/ui/SOSModal'
+import { useUIStore } from '@/store/uiStore'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { Flame, Plus, ChevronRight, Zap, Brain, FlaskConical } from 'lucide-react'
+import { Flame, ChevronRight, Zap, Brain, FlaskConical, AlertCircle } from 'lucide-react'
 import styles from './TodayPage.module.css'
 
 export default function TodayPage() {
   const navigate = useNavigate()
+  const openSOS = useUIStore(s => s.openSOS)
+
   const { data, isLoading } = useQuery({
     queryKey: ['today'],
     queryFn: () => todayApi.get().then(r => r.data),
@@ -28,6 +32,9 @@ export default function TodayPage() {
 
   return (
     <Page>
+      {/* SOS Modal — rendered at page level, controlled via uiStore */}
+      <SOSModal />
+
       {/* Header */}
       <div className={styles.header}>
         <div>
@@ -56,6 +63,7 @@ export default function TodayPage() {
         onClick={() => navigate('/checkin')}
         role='button'
         tabIndex={0}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') navigate('/checkin') }}
       >
         <div className={styles.checkinLeft}>
           <Zap size={20} />
@@ -96,15 +104,16 @@ export default function TodayPage() {
             <span className={`badge badge-success ${styles.badge}`}>{snap.active_experiments_count}</span>
           )}
         </button>
-        <button className={styles.actionBtn} onClick={() => navigate('/thoughts/new')}>
-          <Plus size={22} color='var(--color-text-muted)' />
-          <span>Запись</span>
+        {/* SOS — быстрый захват тяжёлого момента */}
+        <button className={`${styles.actionBtn} ${styles.actionBtnSOS}`} onClick={openSOS}>
+          <AlertCircle size={22} color='var(--color-error)' />
+          <span>SOS</span>
         </button>
       </div>
 
       {/* Unfinished thought records */}
       {snap && snap.unfinished_thought_records_count > 0 && (
-        <button className={styles.pendingCard} onClick={() => navigate('/thoughts/new')}>  
+        <button className={styles.pendingCard} onClick={() => navigate('/thoughts/new')}>
           <Brain size={18} />
           <span>Есть незавершённые записи ({snap.unfinished_thought_records_count})</span>
           <ChevronRight size={16} />
