@@ -1,0 +1,50 @@
+# Traefik v2/v3 labels для docker-compose.yml
+# Используй если у тебя Traefik как reverse proxy вместо nginx.
+# Добавить в секцию nginx сервиса (или создать отдельный сервис app).
+
+# ── Основные labels ───────────────────────────────────────────
+labels:
+  - "traefik.enable=true"
+
+  # Router — HTTPS
+  - "traefik.http.routers.mylifebook.rule=Host(`mylifebook.ru`)"
+  - "traefik.http.routers.mylifebook.entrypoints=websecure"
+  - "traefik.http.routers.mylifebook.tls=true"
+  - "traefik.http.routers.mylifebook.tls.certresolver=letsencrypt"
+
+  # Router — HTTP redirect
+  - "traefik.http.routers.mylifebook-http.rule=Host(`mylifebook.ru`)"
+  - "traefik.http.routers.mylifebook-http.entrypoints=web"
+  - "traefik.http.routers.mylifebook-http.middlewares=https-redirect"
+
+  # Middleware: HTTP → HTTPS
+  - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+  - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
+
+  # Middleware: security headers (noindex + стандартные)
+  - "traefik.http.middlewares.mlb-headers.headers.customResponseHeaders.X-Robots-Tag=noindex, nofollow"
+  - "traefik.http.middlewares.mlb-headers.headers.frameDeny=true"
+  - "traefik.http.middlewares.mlb-headers.headers.contentTypeNosniff=true"
+  - "traefik.http.middlewares.mlb-headers.headers.referrerPolicy=no-referrer"
+  - "traefik.http.middlewares.mlb-headers.headers.stsSeconds=31536000"
+  - "traefik.http.middlewares.mlb-headers.headers.stsIncludeSubdomains=true"
+
+  # Применить middleware к роутеру
+  - "traefik.http.routers.mylifebook.middlewares=mlb-headers"
+
+  # Сервис (порт nginx контейнера)
+  - "traefik.http.services.mylifebook.loadbalancer.server.port=80"
+
+# ── traefik статические настройки (traefik.yml) ───────────────
+# entryPoints:
+#   web:
+#     address: ":80"
+#   websecure:
+#     address: ":443"
+# certificatesResolvers:
+#   letsencrypt:
+#     acme:
+#       email: your@email.com
+#       storage: /letsencrypt/acme.json
+#       httpChallenge:
+#         entryPoint: web

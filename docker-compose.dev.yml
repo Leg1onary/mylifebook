@@ -1,0 +1,26 @@
+version: "3.9"
+
+# Переопределяет docker-compose.yml для локальной разработки.
+# Запуск: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+
+  backend:
+    volumes:
+      - ./backend:/app
+      - db_data:/data
+    command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+
+  frontend:
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host 0.0.0.0
+    ports:
+      - "5173:5173"
+
+  nginx:
+    profiles:
+      - prod

@@ -1,0 +1,39 @@
+# Окружение
+.env
+.env.local
+.env.*.local
+
+# БД
+data/lifebook.db
+data/backups/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Логи
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Certs
+infra/nginx/certs/
