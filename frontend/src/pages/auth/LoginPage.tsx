@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/authStore'
 import styles from './Auth.module.css'
 
 const schema = z.object({
-  username: z.string().min(1, 'Введите логин'),
+  email: z.string().email('Введите корректный email'),
   password: z.string().min(6, 'Минимум 6 символов'),
 })
 type Form = z.infer<typeof schema>
@@ -45,10 +45,10 @@ export default function LoginPage() {
 
       <form className={styles.form} onSubmit={handleSubmit(d => mutation.mutate(d))}>
         <div className={styles.field}>
-          <label className='label' htmlFor='username'>Логин</label>
-          <input id='username' className={`input ${errors.username ? 'input-error' : ''}`}
-            placeholder='your_login' autoComplete='username' {...register('username')} />
-          {errors.username && <span className={styles.error}>{errors.username.message}</span>}
+          <label className='label' htmlFor='email'>Email</label>
+          <input id='email' type='email' className={`input ${errors.email ? 'input-error' : ''}`}
+            placeholder='you@example.com' autoComplete='email' {...register('email')} />
+          {errors.email && <span className={styles.error}>{errors.email.message}</span>}
         </div>
 
         <div className={styles.field}>
@@ -59,7 +59,7 @@ export default function LoginPage() {
         </div>
 
         {mutation.isError && (
-          <p className={styles.apiError}>Неверный логин или пароль</p>
+          <p className={styles.apiError}>Неверный email или пароль</p>
         )}
 
         <button className='btn btn-primary' style={{ width: '100%' }}
