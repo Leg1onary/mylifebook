@@ -18,6 +18,7 @@ class User(Base):
     settings = relationship("UserSettings", back_populates="user", uselist=False, cascade="all, delete-orphan")
     context = relationship("PersonalContext", back_populates="user", uselist=False, cascade="all, delete-orphan")
     checkins = relationship("DailyCheckin", back_populates="user", cascade="all, delete-orphan")
+    journal_entries = relationship("JournalEntry", back_populates="user", cascade="all, delete-orphan")
     thought_records = relationship("ThoughtRecord", back_populates="user", cascade="all, delete-orphan")
     experiments = relationship("Experiment", back_populates="user", cascade="all, delete-orphan")
     trigger_events = relationship("TriggerEvent", back_populates="user", cascade="all, delete-orphan")
