@@ -7,7 +7,7 @@ from app.deps import get_db, get_current_user
 from app.models.user import User
 from app.models.personal_context import PersonalContext
 from app.schemas.personal_context import PersonalContextUpdate, PersonalContextOut
-from app.services.ai.profile_extractor import extract_profile_from_text
+from app.services.ai.profile_extractor import extract_profile
 from app.config import get_settings
 
 router = APIRouter()
@@ -68,20 +68,10 @@ async def upload_raw_text(
     if len(payload.text.strip()) < 20:
         raise HTTPException(status_code=400, detail="Text is too short to extract meaningful context")
 
-    extracted = await extract_profile_from_text(payload.text)
-
-    result = await db.execute(
-        select(PersonalContext).where(PersonalContext.user_id == user.id)
+    # extract_profile handles upsert internally — just return the result
+    ctx = await extract_profile(
+        raw_text=payload.text,
+        user_id=user.id,
+        db=db,
     )
-    ctx = result.scalar_one_or_none()
-    if not ctx:
-        ctx = PersonalContext(user_id=user.id)
-        db.add(ctx)
-
-    # Merge: only overwrite fields that AI returned non-empty values for
-    for field, value in extracted.items():
-        if value not in (None, "", [], {}):
-            setattr(ctx, field, value)
-
-    await db.flush()
     return ctx
